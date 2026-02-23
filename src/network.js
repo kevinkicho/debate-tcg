@@ -9,6 +9,14 @@ export class NetworkClient {
         });
 
         this.socket.on('play_error', (p) => alert(p.message));
+
+        this.socket.on('system_message', (payload) => {
+            if (this.onSystemMessage) this.onSystemMessage(payload.message);
+        });
+
+        this.socket.on('speech_generated', (payload) => {
+            if (this.onSpeechGenerated) this.onSpeechGenerated(payload);
+        });
     }
 
     joinRoom(roomId, playerName, stateCode) {
@@ -22,16 +30,20 @@ export class NetworkClient {
     }
 
     playCard(instanceId, type, name, cost) {
-        this.socket.emit('play_card', { 
-            roomId: this.roomId, 
+        this.socket.emit('play_card', {
+            roomId: this.roomId,
             cardInstanceId: instanceId,
             cardType: type,
             cardName: name,
-            capitalCost: cost 
+            capitalCost: cost
         });
     }
 
     drawCard() {
         this.socket.emit('draw_card', { roomId: this.roomId });
+    }
+
+    fundraise() {
+        this.socket.emit('fundraise', { roomId: this.roomId });
     }
 }

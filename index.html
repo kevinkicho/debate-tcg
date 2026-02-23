@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>USA Political TCG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-900 text-white font-sans overflow-hidden">
+
+<body class="bg-slate-900 text-white font-sans">
     <div id="lobby-screen" class="flex flex-col items-center justify-center min-h-screen">
         <h1 class="text-6xl font-black mb-8 text-blue-500 italic">DEBATE TCG</h1>
         <div class="bg-slate-800 p-8 rounded-2xl border-2 border-slate-700 w-full max-w-md">
@@ -20,22 +22,44 @@
         </div>
     </div>
 
-    <div id="game-screen" class="hidden h-screen flex flex-col p-6">
+    <div id="game-screen" class="hidden min-h-screen flex flex-col p-6">
         <div class="flex justify-between items-start mb-6">
-            <div class="bg-blue-900 p-4 rounded-xl border-2 border-blue-400">
+            <div class="bg-blue-900 p-4 rounded-xl border-2 border-blue-400 w-64">
+                <div class="text-xs uppercase opacity-50 mb-1">Room: <span id="display-room">---</span></div>
                 <span id="display-my-points" class="text-4xl font-black">0</span>/50 Support
-                <div class="text-yellow-400 font-bold">Capital: $<span id="display-capital">5</span></div>
+                <div class="text-yellow-400 font-bold mb-2">Capital: $<span id="display-capital">5</span></div>
+                <!-- ATB Gauge -->
+                <div class="text-[10px] uppercase font-black tracking-widest opacity-50 mb-1">Action Gauge</div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="atb-gauge" class="bg-yellow-400 h-full w-0 transition-all duration-100"></div>
+                </div>
             </div>
-            <div class="bg-red-900 p-4 rounded-xl border-2 border-red-400 text-right">
+            <div class="bg-red-900 p-4 rounded-xl border-2 border-red-400 text-right w-64">
+                <div class="text-xs uppercase opacity-50 mb-1">Opponent</div>
                 <span id="display-opp-points" class="text-4xl font-black">0</span>/50 Support
+                <div class="h-6"></div> <!-- Spacer -->
+                <!-- ATB Gauge -->
+                <div class="text-[10px] uppercase font-black tracking-widest opacity-50 mb-1">Readying Rebuttal</div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="opp-atb-gauge" class="bg-yellow-400 h-full w-0 transition-all duration-100 ml-auto"></div>
+                </div>
             </div>
         </div>
-        <div id="speech-log" class="flex-grow bg-slate-950/50 rounded-2xl p-6 overflow-y-auto mb-6 flex flex-col gap-4 border border-slate-800 shadow-inner"></div>
-        <div id="player-hand" class="flex justify-center gap-4 h-64 overflow-x-auto px-4 py-2"></div>
-        <button id="draw-btn" class="bg-yellow-500 text-slate-900 px-10 py-3 rounded-full font-black mx-auto block mb-4">DRAW POLICY</button>
+        <div id="speech-log"
+            class="flex-grow bg-slate-950/50 rounded-2xl p-6 overflow-y-auto mb-6 flex flex-col gap-4 border border-slate-800 shadow-inner">
+        </div>
+        <div id="player-hand" class="flex justify-center gap-2 h-72 overflow-x-auto px-10 py-4"></div>
+        <div class="flex justify-center gap-4 mb-4">
+            <button id="draw-btn"
+                class="bg-yellow-500 text-slate-900 px-10 py-3 rounded-full font-black uppercase shadow-lg hover:bg-yellow-400 transition-colors">Draw
+                Policy</button>
+            <button id="fundraise-btn"
+                class="bg-emerald-500 text-white px-10 py-3 rounded-full font-black uppercase shadow-lg hover:bg-emerald-400 transition-colors">Fundraise</button>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="src/app.js"></script>
 </body>
+
 </html>
