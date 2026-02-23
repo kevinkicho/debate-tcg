@@ -45,7 +45,6 @@ network.onStateUpdate = (roomState) => {
 // Listeners for the AI Event System
 network.socket.on('speech_generated', (payload) => {
     const log = document.getElementById('speech-log');
-    // Remove the "Awaiting arguments" placeholder
     if(log.innerHTML.includes('Awaiting opening arguments')) log.innerHTML = '';
 
     const align = payload.isAI ? 'flex-start' : 'flex-end';
@@ -90,12 +89,11 @@ document.getElementById('join-btn').addEventListener('click', () => {
     if (playerName && roomId) network.joinRoom(roomId, playerName, draftDeck);
 });
 
-// NEW: Play against AI
 document.getElementById('join-ai-btn').addEventListener('click', () => {
     const playerName = document.getElementById('player-name').value;
     const roomId = document.getElementById('room-id').value;
     if (playerName && roomId) {
-        network.socket.emit('join_ai_room', { roomId, playerName, deckData: draftDeck });
+        network.joinAIRoom(roomId, playerName, draftDeck);
     }
 });
 
@@ -114,7 +112,7 @@ function renderHandToBoard(currentHandArray) {
         btn.setAttribute('data-instance-id', card.instanceId); 
         btn.setAttribute('data-type', card.type);
         btn.setAttribute('data-cost', card.cost);
-        btn.setAttribute('data-name', card.name); // Need name for AI generation
+        btn.setAttribute('data-name', card.name); 
         btn.innerText = `Play "${card.name}" (Cost: ${card.cost})`;
         
         handContainer.appendChild(btn);
@@ -128,12 +126,6 @@ document.getElementById('player-hand').addEventListener('click', (e) => {
         const cardName = e.target.getAttribute('data-name');
         const cost = parseInt(e.target.getAttribute('data-cost'), 10);
         
-        network.socket.emit('play_card', {
-            roomId: network.roomId,
-            instanceId: instanceId,
-            cardType: cardType,
-            cardName: cardName,
-            capitalCost: cost
-        });
+        network.playCard(instanceId, cardType, cardName, cost);
     }
 });

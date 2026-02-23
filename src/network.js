@@ -28,7 +28,7 @@ export class NetworkClient {
         });
 
         this.socket.on('play_error', (payload) => {
-            alert(payload.message); // Alert the user if they can't afford a card or the deck is empty
+            alert(payload.message); 
         });
 
         this.socket.on('room_error', (payload) => {
@@ -44,25 +44,29 @@ export class NetworkClient {
         });
     }
 
-    // UPDATED: Now accepts deckData from the Deck Builder
     joinRoom(roomId, playerName, deckData) {
         this.roomId = roomId;
         this.playerName = playerName;
         this.socket.emit('join_room', { roomId, playerName, deckData });
     }
 
-    // UPDATED: Now passes the unique instanceId so the server knows exactly which card to remove
-    playCard(instanceId, cardType, capitalCost) {
+    joinAIRoom(roomId, playerName, deckData) {
+        this.roomId = roomId;
+        this.playerName = playerName;
+        this.socket.emit('join_ai_room', { roomId, playerName, deckData });
+    }
+
+    playCard(instanceId, cardType, cardName, capitalCost) {
         if (!this.roomId) return;
         this.socket.emit('play_card', {
             roomId: this.roomId,
             instanceId: instanceId,
             cardType: cardType,
+            cardName: cardName,
             capitalCost: capitalCost
         });
     }
 
-    // NEW: Request to draw a card from the deck
     drawCard() {
         if (!this.roomId) return;
         this.socket.emit('draw_card', {

@@ -16,8 +16,13 @@ function registerDebateHandlers(io, socket) {
             return;
         }
 
-        const cardIndex = player.hand.findIndex(c => c.instanceId === instanceId);
-        if (cardIndex === -1) return;
+        // FIX: Force both the stored ID and the incoming ID into Strings to guarantee a match
+        const cardIndex = player.hand.findIndex(c => String(c.instanceId) === String(instanceId));
+        
+        if (cardIndex === -1) {
+            console.log("Card not found in hand! Sync error.");
+            return;
+        }
 
         // Deduct capital and remove card
         player.politicalCapital -= capitalCost;
@@ -34,7 +39,8 @@ function registerDebateHandlers(io, socket) {
         io.to(roomId).emit('speech_generated', { 
             speakerName: player.name, 
             speechText: humanSpeech,
-            cardName: cardName
+            cardName: cardName,
+            isAI: false
         });
 
         // Check Win Condition
@@ -85,7 +91,7 @@ function registerDebateHandlers(io, socket) {
         }
     }
 
-    // 3. Human Draws a Card (FIXED: Deducts Capital properly!)
+    // 3. Human Draws a Card
     socket.on('draw_card', (payload) => {
         const { roomId } = payload;
         const room = roomManager.getRoom(roomId);
@@ -99,7 +105,7 @@ function registerDebateHandlers(io, socket) {
         }
 
         if (player.deck.length > 0) {
-            player.politicalCapital -= 1; // Fix applied here
+            player.politicalCapital -= 1; 
             const drawnCard = player.deck.pop();
             player.hand.push(drawnCard);
             

@@ -9,7 +9,8 @@ async function generateSpeech(cardName, cardType, isAI = false) {
         return isAI ? `(AI uses ${cardName}) "I strongly oppose this!"` : `(You used ${cardName}) "This is exactly what the people need!"`;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // THE FIX: Upgraded to the active 2.5 Flash model
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const speaker = isAI ? "a rival AI political opponent" : "a passionate human politician";
     
     const prompt = `You are ${speaker} in a heated parliamentary debate. You just played a strategic maneuver called "${cardName}" (Strategy Type: ${cardType}). Write a dramatic, slightly humorous, and highly persuasive 2-sentence political speech executing this exact move. Do not use quotes around the text.`;
