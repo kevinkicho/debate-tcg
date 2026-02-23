@@ -1,0 +1,86 @@
+/* --- Deck Builder UI Styles --- */
+#deck-builder-screen {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.deck-builder-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+#card-library {
+    flex: 2;
+    background: #ecf0f1;
+    padding: 15px;
+    border-radius: 5px;
+    height: 500px;
+    overflow-y: auto;
+}
+
+#active-deck {
+    flex: 1;
+    background: #bdc3c7;
+    padding: 15px;
+    border-radius: 5px;
+    height: 500px;
+    overflow-y: auto;
+}
+
+#library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.draft-card {
+    background: white;
+    border: 2px solid #2980b9;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.1s;
+}
+
+.draft-card:hover {
+    transform: scale(1.05);
+    background: #e8f4f8;
+}
+
+.deck-list-item {
+    background: white;
+    border-left: 5px solid #e74c3c;
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.deck-list-item:hover {
+    background: #fadbd8;
+}
+
+#save-deck-btn {
+    width: 100%;
+    padding: 15px;
+    background: #27ae60;
+    color: white;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#save-deck-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}

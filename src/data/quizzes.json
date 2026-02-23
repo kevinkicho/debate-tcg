@@ -1,0 +1,45 @@
+{
+  "defense_quizzes": [
+    {
+      "id": "def_001",
+      "type": "multiple_choice",
+      "prompt": "Your opponent just played 'Scandal'. Select the most formal, grammatically correct defense to block it:",
+      "options": [
+        "A) I haven't no knowledge of these events.",
+        "B) I was entirely unaware of these developments.",
+        "C) I didn't knew about this at all."
+      ],
+      "correctAnswer": "B"
+    },
+    {
+      "id": "def_002",
+      "type": "multiple_choice",
+      "prompt": "Block the 'Gaffe' trap by selecting the correct self-correction:",
+      "options": [
+        "A) What I intended to convey was...",
+        "B) What I am meaning to said is...",
+        "C) The thing I was spoke about..."
+      ],
+      "correctAnswer": "A"
+    }
+  ],
+  "attack_quizzes": [
+    {
+      "id": "atk_001",
+      "type": "fill_in_blank",
+      "prompt": "Complete the 'Slippery Slope' argument:",
+      "sentenceParts": ["If we allow this budget increase, then ", " will ", " our economy!"],
+      "wordBank": ["inevitably", "mitigate", "bolster", "devastate"],
+      "correctAnswer": ["inevitably", "devastate"]
+    }
+  ],
+  "ultimate_quizzes": [
+    {
+      "id": "ult_001",
+      "type": "rapid_typing",
+      "prompt": "Memorize and type this word perfectly to activate 'The Filibuster':",
+      "targetWord": "Grandiloquent",
+      "timeLimitSeconds": 5
+    }
+  ]
+}
