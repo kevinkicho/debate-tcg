@@ -98,12 +98,14 @@ function registerDebateHandlers(io, socket) {
             if (aiPlayer.politicalCapital >= 1 && aiPlayer.deck.length > 0) {
                 aiPlayer.politicalCapital -= 1;
                 roomManager.drawCard(roomId, aiId);
+                aiPlayer.atb = 0; // Consumption
                 io.to(roomId).emit('room_state', room);
+                io.to(roomId).emit('system_message', { message: `${aiPlayer.name} has drafted a new policy platform.` });
             } else if (aiPlayer.politicalCapital < 1) {
                 roomManager.fundraise(roomId, aiId);
-                aiPlayer.atb = 0; // Fundraising consumes the turn
+                aiPlayer.atb = 0; // Consumption
                 io.to(roomId).emit('room_state', room);
-                io.to(roomId).emit('system_message', { message: `${aiPlayer.name} is hosting a fundraising gala.` });
+                io.to(roomId).emit('system_message', { message: `${aiPlayer.name} is hosting a high-stakes fundraising gala.` });
             }
         }
     }
@@ -111,6 +113,86 @@ function registerDebateHandlers(io, socket) {
     // Capture roomId on join for the interval to use
     socket.on('join_room', (payload) => { socket.roomId = payload.roomId; });
     socket.on('join_ai_room', (payload) => { socket.roomId = payload.roomId; });
+
+    // 3. Human Drafts Policy (Mini-game Start)
+    socket.on('draw_card', (payload) => {
+        const result = roomManager.startDraft(socket.roomId, socket.id);
+        const room = roomManager.getRoom(socket.roomId);
+
+        if (!result.success) {
+            socket.emit('play_error', { message: result.message });
+            return;
+        }
+
+        // Emit the roll Result ONLY to the player
+        socket.emit('draft_started', {
+            roll: result.roll,
+            options: result.options,
+            pickCount: result.pickCount
+        });
+
+        // Broadcast turn consumption
+        io.to(socket.roomId).emit('room_state', room);
+        io.to(socket.roomId).emit('system_message', { message: `${room.players[socket.id].name} is consulting with policy advisors...` });
+    });
+
+    // 4. Human Selects Policy Choice
+    socket.on('select_draft', (payload) => {
+        const { cardInstanceIds } = payload;
+        const room = roomManager.getRoom(socket.roomId);
+        if (!room) return;
+
+        const success = roomManager.selectDraft(socket.roomId, socket.id, cardInstanceIds);
+        if (success) {
+            io.to(socket.roomId).emit('room_state', room);
+            socket.emit('system_message', { message: `Policy successfully adopted.` });
+        }
+    });
+
+    // 5. Human Fundraises (Rally Mini-game)
+    socket.on('fundraise', (payload) => {
+        const room = roomManager.getRoom(socket.roomId);
+        const result = roomManager.fundraise(socket.roomId, socket.id);
+
+        if (!result.success) {
+            socket.emit('play_error', { message: result.message });
+            return;
+        }
+
+        io.to(socket.roomId).emit('room_state', room);
+
+        const player = room.players[socket.id];
+        const msg = `BIG RALLY! ${player.name} raised $${result.capitalGained}M and gained +${result.supportGained} Support!`;
+        io.to(socket.roomId).emit('system_message', { message: msg });
+        io.to(socket.roomId).emit('rally_result', {
+            playerId: socket.id,
+            capital: result.capitalGained,
+            support: result.supportGained
+        });
+    });
+
+    // 6. Action Intent (Psychological Warfare/Transparency)
+    socket.on('set_intent', (payload) => {
+        const { intent } = payload; // 'drafting', 'rallying', 'none'
+        io.to(socket.roomId).emit('action_intent', { playerId: socket.id, intent });
+    });
+
+    // 7. Town Hall Submission
+    socket.on('submit_townhall', (payload) => {
+        const { choice } = payload;
+        const room = roomManager.getRoom(socket.roomId);
+        if (!room) return;
+
+        const success = roomManager.submitTownHall(socket.roomId, socket.id, choice);
+        if (success) {
+            io.to(socket.roomId).emit('room_state', room);
+            // If Town Hall ended, broadcast resumption
+            if (!room.townHall) {
+                io.to(socket.roomId).emit('townhall_ended');
+                io.to(socket.roomId).emit('system_message', { message: "The Town Hall has concluded. Resume the debate!" });
+            }
+        }
+    });
 
     // 5. Game Loop (10Hz - ATB Progression & State Sync)
     if (!socket.gameLoop) {
@@ -128,13 +210,42 @@ function registerDebateHandlers(io, socket) {
                         room.capTick = 0;
                     }
 
+                    // Town Hall Trigger every ~90s (900 ticks)
+                    if (room.townHallTick === undefined) room.townHallTick = 0;
+                    room.townHallTick++;
+                    if (room.townHallTick >= 900) {
+                        const townHall = roomManager.triggerTownHall(socket.roomId);
+                        if (townHall) {
+                            io.to(socket.roomId).emit('townhall_started', townHall);
+                            io.to(socket.roomId).emit('system_message', { message: "🚨 GLOBAL EVENT: A Town Hall meeting is underway. All actions paused!" });
+                        }
+                        room.townHallTick = 0;
+                    }
+
                     io.to(socket.roomId).emit('room_state', room);
 
-                    // Automated AI check
-                    const aiId = room.playerIds.find(id => room.players[id].isAI);
-                    if (aiId && room.players[aiId].atb >= 100) {
-                        executeAITurn(socket.roomId, aiId, io);
+                    // Automated AI check (Only if not in Town Hall)
+                    if (!room.townHall) {
+                        const aiId = room.playerIds.find(id => room.players[id].isAI);
+                        if (aiId && room.players[aiId].atb >= 100) {
+                            executeAITurn(socket.roomId, aiId, io);
+                        }
                     }
+                } else if (room && room.status === 'paused' && room.townHall) {
+                    // AI Response for Town Hall
+                    const aiId = room.playerIds.find(id => room.players[id].isAI);
+                    if (aiId && !room.townHall.responses[aiId]) {
+                        setTimeout(() => {
+                            roomManager.submitTownHall(socket.roomId, aiId, 'yes'); // AI always says yes for now
+                            io.to(socket.roomId).emit('room_state', room);
+                            if (!room.townHall) {
+                                io.to(socket.roomId).emit('townhall_ended');
+                                io.to(socket.roomId).emit('system_message', { message: "The Town Hall has concluded. Resume the debate!" });
+                            }
+                        }, 2000);
+                    }
+                    // Still sync state while paused
+                    io.to(socket.roomId).emit('room_state', room);
                 }
             }
         }, 100);

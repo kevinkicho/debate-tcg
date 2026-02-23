@@ -2,104 +2,678 @@
     --player-bubble: #1e40af;
     --ai-bubble: #991b1b;
     --system-bubble: #334155;
+    --gold: #fbbf24;
 }
 
 body {
     margin: 0;
     padding: 0;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    background-color: #020617;
 }
 
-#player-hand {
-    padding-top: 20px;
-    /* Clearance for hover transform */
+#game-screen {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at 50% 120%, #1e293b 0%, #020617 100%);
 }
 
+/* Typography Overrides */
+.font-serif {
+    font-family: 'Playfair Display', serif;
+}
+
+/* The Podium (Speech Log) */
 #speech-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
     scrollbar-width: thin;
     scrollbar-color: #334155 transparent;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    min-height: 0;
 }
 
 #speech-log::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 #speech-log::-webkit-scrollbar-thumb {
-    background-color: #334155;
+    background: #334155;
     border-radius: 10px;
 }
 
-/* Bubble Animations */
-@keyframes pop-in {
-    0% {
-        transform: scale(0.9) translateY(10px);
+/* UI Animation Fallbacks (for browsers/CDN issues) */
+.animate-in {
+    animation-duration: 500ms;
+    animation-fill-mode: both;
+}
+
+.fade-in {
+    animation-name: fadeIn;
+}
+
+.slide-in-from-bottom-4 {
+    animation-name: slideInBottom;
+}
+
+@keyframes fadeIn {
+    from {
         opacity: 0;
     }
 
-    100% {
-        transform: scale(1) translateY(0);
+    to {
         opacity: 1;
     }
 }
 
-.bubble {
-    animation: pop-in 0.3s ease-out forwards;
-    max-width: 80%;
+@keyframes slideInBottom {
+    from {
+        transform: translateY(1rem);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Buff Hubs */
+.buff-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    background: #0f172a;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
     position: relative;
+    cursor: help;
+    transition: transform 0.2s;
 }
 
-.bubble-left {
-    align-self: flex-start;
+.buff-icon:hover {
+    transform: scale(1.2);
+    z-index: 50;
 }
 
-.bubble-right {
-    align-self: flex-end;
+.buff-haste {
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
 }
 
-/* Card Styling */
+.buff-slow {
+    border-color: #94a3b8;
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.4);
+    color: #94a3b8;
+}
+
+.buff-focus {
+    border-color: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    color: #10b981;
+}
+
+.buff-timer {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    background: #000;
+    color: #fff;
+    padding: 0 2px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+/* Drafting Overlay */
+#draft-overlay {
+    transition: opacity 0.5s ease;
+}
+
+.dice-shake {
+    animation: shake 0.1s infinite;
+}
+
+/* Hand Layouts */
+/* Main Containers */
+#player-hand {
+    /* Large top padding to allow cards to hover upwards without clipping */
+    padding-top: 150px;
+    margin-top: -100px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    overflow-y: visible !important;
+}
+
+#player-hand::-webkit-scrollbar {
+    height: 6px;
+}
+
+#player-hand::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+/* Sidebar Styles */
+#left-sidebar,
+#right-sidebar {
+    min-height: 0;
+    flex-shrink: 0;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.history-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 0.75rem;
+    position: relative;
+    animation: slide-in-left 0.4s ease-out forwards;
+}
+
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.momentum-pulse {
+    animation: momentum-glow 2s infinite;
+}
+
+@keyframes momentum-glow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.5));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8));
+    }
+}
+
+/* Card Improvements */
 .tcg-card {
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    width: 240px;
+    height: 340px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 10px 15px -3px rgba(0, 0, 0, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    position: relative;
+    user-select: none;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid transparent;
+}
+
+.card-wrapper {
+    position: relative;
+    z-index: 1;
+    transition: z-index 0s 0.2s;
+    /* Delay z-index drop */
+}
+
+.card-wrapper:hover {
+    z-index: 100;
+    transition: z-index 0s;
+}
+
+.card-wrapper:hover .tcg-card {
+    transform: translateY(-120px) scale(1.1) rotate(2deg);
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+    border-color: var(--gold);
+}
+
+#opponent-hand {
+    display: flex;
+    perspective: 1000px;
+}
+
+/* Opponent Card Backs */
+.opp-card-back {
+    width: 40px;
+    height: 60px;
+    background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+    border: 1px solid #ef4444;
+    border-radius: 4px;
+    margin-left: -15px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    transform: rotateX(20deg);
+    transition: all 0.5s ease;
+    background-image: radial-gradient(circle, #991b1b 10%, transparent 10%);
+    background-size: 8px 8px;
+}
+
+/* Card Stable Hover Logic - FIXED: No layout shift */
+.card-wrapper {
+    width: 180px;
+    /* Reduced width for better fit */
+    height: 240px;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 -30px;
+    /* Overlap cards */
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.card-wrapper:hover {
+    z-index: 100 !important;
+    /* Removed margin change to prevent horizontal pushing */
+}
+
+.tcg-card {
+    width: 100%;
+    height: 100%;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: #fff;
+    border-radius: 1.25rem;
+    border: 3px solid #e2e8f0;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+    color: #0f172a;
+    transform-origin: bottom center;
+}
+
+.card-wrapper:hover .tcg-card {
+    transform: translateY(-60px) scale(1.2) rotate(2deg);
+    box-shadow: 0 40px 70px -15px rgba(0, 0, 0, 0.7);
+    border-color: #60a5fa;
+}
+
+/* Drafting Choice Card Variant */
+.draft-choice-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.draft-choice-card:hover {
+    transform: scale(1.1) rotate(-2deg);
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 30px var(--gold);
+}
+
+/* Type Color Themes */
+.card-type-attack {
+    border-color: #ef4444 !important;
+    background: linear-gradient(to bottom, #fff 50%, #fee2e2 100%) !important;
+}
+
+.card-type-character {
+    border-color: #10b981 !important;
+    background: linear-gradient(to bottom, #fff 50%, #d1fae5 100%) !important;
+}
+
+.card-type-trap {
+    border-color: #8b5cf6 !important;
+    background: linear-gradient(to bottom, #fff 50%, #ede9fe 100%) !important;
+}
+
+.card-type-fundraising {
+    border-color: #f59e0b !important;
+    background: linear-gradient(to bottom, #fff 50%, #fef3c7 100%) !important;
+}
+
+/* Visual Feedback Components */
+.card-energy {
+    background: #0f172a;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 900;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 2px solid #334155;
+}
+
+.learning-tag {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #2563eb;
+    background: #eff6ff;
+    padding: 2px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px solid #bfdbfe;
+    text-transform: uppercase;
+}
+
+/* Broadcast Banner */
+#broadcast-banner {
+    background: linear-gradient(90deg, #1e40af 0%, #1d4ed8 50%, #1e40af 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
 }
 
-.tcg-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.5);
-    z-index: 50;
-    border-color: #3b82f6;
-    /* Blue highlight */
+#broadcast-banner::after {
+    content: " • LIVE FROM WASHINGTON • ";
+    position: absolute;
+    right: -100%;
+    animation: banner-scroll 15s linear infinite;
+    white-space: nowrap;
+    opacity: 0.5;
+    font-weight: 900;
 }
 
-.tcg-card::before {
+@keyframes banner-scroll {
+    from {
+        right: -100%;
+    }
+
+    to {
+        right: 100%;
+    }
+}
+
+/* Town Hall Overlay */
+#townhall-overlay {
+    z-index: 2000;
+    background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+}
+
+.townhall-vote-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.townhall-vote-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.townhall-vote-btn:hover::before {
+    opacity: 1;
+}
+
+/* Gauge Feedback */
+@keyframes shake-red {
+
+    0%,
+    100% {
+        transform: translateX(0);
+        background-color: transparent;
+    }
+
+    20%,
+    60% {
+        transform: translateX(-10px);
+        background-color: rgba(239, 68, 68, 0.4);
+    }
+
+    40%,
+    80% {
+        transform: translateX(10px);
+        background-color: rgba(239, 68, 68, 0.4);
+    }
+}
+
+.shake-error {
+    animation: shake-red 0.4s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* Intent Indicators */
+.intent-visible {
+    opacity: 1 !important;
+    animation: pulse-intent 1.5s infinite;
+}
+
+@keyframes pulse-intent {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Buff Hub Improvements */
+#my-buff-hub,
+#opp-buff-hub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 200px;
+}
+
+/* Animations */
+@keyframes draw-card {
+    0% {
+        transform: translateY(600px) scale(0) rotate(30deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0) scale(1) rotate(0);
+        opacity: 1;
+    }
+}
+
+.animate-draw {
+    animation: draw-card 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Tooltip Styles */
+#card-preview-tooltip {
+    pointer-events: none;
+    z-index: 9999;
+    filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5));
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(0);
+}
+
+#card-preview-tooltip.hidden {
+    display: none;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* Button Charging State */
+.btn-charging {
+    filter: grayscale(0.8) brightness(0.7);
+    cursor: wait;
+    opacity: 0.8;
+}
+
+.btn-charging::after {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg,
-            transparent 45%,
-            rgba(255, 255, 255, 0.1) 50%,
-            transparent 55%);
-    transform: rotate(45deg);
-    transition: all 0.5s;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: charging-glimmer 2s infinite linear;
 }
 
-.tcg-card:hover::before {
-    left: 100%;
+@keyframes charging-glimmer {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(100%);
+    }
 }
 
-.card-energy {
-    background: #000;
-    color: #fff;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
+.impact-text {
+    position: absolute;
     font-weight: 900;
+    pointer-events: none;
+    z-index: 1000;
+    text-shadow: 4px 4px 0 #000;
+    animation: impact-float 1.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes impact-float {
+    0% {
+        transform: translateY(0) scale(0.5);
+        opacity: 0;
+    }
+
+    15% {
+        transform: translateY(-40px) scale(2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-150px) scale(1);
+        opacity: 0;
+    }
+}
+
+.impact-me {
+    left: 25%;
+    bottom: 35%;
+    color: #3b82f6;
+    font-size: 4rem;
+}
+
+.impact-opp {
+    right: 25%;
+    top: 35%;
+    color: #ef4444;
+    font-size: 4rem;
+}
+
+.impact-center {
+    left: 0;
+    right: 0;
+    top: 50%;
+    color: var(--gold);
+    font-size: 5rem;
+    text-align: center;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-15px, -15px);
+    }
+
+    50% {
+        transform: translate(15px, 15px);
+    }
+
+    75% {
+        transform: translate(-15px, 15px);
+    }
+}
+
+.screen-shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+.card-played-anim {
+    transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1) !important;
+    transform: translateY(-800px) scale(0) rotate(180deg) !important;
+    opacity: 0 !important;
+}
+
+/* Bubbles */
+.bubble {
+    max-width: 80%;
+    padding: 1.5rem 2.5rem;
+    border-radius: 2.5rem;
+    position: relative;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    font-size: 1.4rem;
+    line-height: 1.3;
+}
+
+.bubble-right {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #fff;
+    border-bottom-right-radius: 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.bubble-left {
+    align-self: flex-start;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    color: #fff;
+    border-bottom-left-radius: 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.sys-msg {
+    align-self: center;
+    background: rgba(51, 65, 85, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    padding: 0.5rem 2rem;
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 0.1em;
+}
+
+/* Campaign Rally Particles */
+@keyframes gold-shower {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(200px);
+        opacity: 0;
+    }
+}
+
+.rally-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: gold-shower 1s ease-out forwards;
 }
