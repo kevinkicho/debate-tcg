@@ -30,43 +30,47 @@
         <h1>Welcome to the Chamber</h1>
         <input type="text" id="player-name" placeholder="Enter your name">
         <input type="text" id="room-id" placeholder="Enter Room ID (e.g., room-1)">
-        <button id="join-btn">Join Debate</button>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button id="join-btn" style="flex: 1;">Wait for Human</button>
+            <button id="join-ai-btn" style="flex: 1; background: #8e44ad; color: white; border: none; border-radius: 5px; cursor: pointer;">Play vs AI</button>
+        </div>
         <p id="lobby-message"></p>
     </div>
 
     <div id="game-screen" class="hidden">
-        <div id="status-bar">
-            <h2>Room: <span id="display-room"></span> | Public Support: <span id="display-support">0</span></h2>
-            <p>Political Capital: <span id="display-capital">10</span></p>
-        </div>
-
-        <div id="quiz-modal" class="hidden">
-            <h3 id="quiz-title">Fact Check Required!</h3>
-            <p id="quiz-prompt"></p>
-            <div id="quiz-dynamic-content"></div> 
-        </div>
-
-        <div id="board-area" style="background: #ecf0f1; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; border: 2px dashed #7f8c8d;">
-            <h3>The Resolution Desk</h3>
-            <div id="current-topic" style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <strong>Current Topic:</strong> The Annual Budget Proposal
+        <div id="status-bar" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <div>
+                <h2 style="margin: 0;">Room: <span id="display-room"></span></h2>
+                <p style="margin: 5px 0 0 0; color: #7f8c8d;" id="system-message">Game starting...</p>
             </div>
-            <div id="played-cards" style="display: flex; justify-content: center; gap: 10px; min-height: 50px;">
-                <p style="color: #95a5a6; font-style: italic;">Awaiting opening arguments...</p>
+            <div style="text-align: right;">
+                <h3 style="margin: 0; color: #2980b9;">My Points: <span id="display-my-points">0</span> / 50</h3>
+                <h3 style="margin: 5px 0 0 0; color: #e74c3c;">Opponent Points: <span id="display-opp-points">0</span> / 50</h3>
+            </div>
+        </div>
+
+        <div id="board-area" style="background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px dashed #7f8c8d; min-height: 250px; display: flex; flex-direction: column;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">The Resolution Desk</h3>
+                <strong>Topic:</strong> The Annual Budget Proposal
+            </div>
+            
+            <div id="speech-log" style="flex: 1; background: white; border-radius: 5px; padding: 15px; overflow-y: auto; max-height: 300px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="text-align: center; color: #95a5a6; font-style: italic;">Awaiting opening arguments...</div>
             </div>
         </div>
 
         <div id="hand-area" style="background: #34495e; padding: 15px; border-radius: 8px; color: white;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0;">Your Hand</h3>
-                <div class="deck-controls">
-                    <button id="draw-btn" class="card-btn" style="background: #27ae60;">Draw Card (1 Capital)</button>
+                <div>
+                    <span style="margin-right: 15px;">Political Capital: <strong id="display-capital">10</strong></span>
+                    <button id="draw-btn" class="card-btn" style="background: #27ae60;">Draw Card (Cost: 1)</button>
                     <span id="cards-left-label" style="margin-left: 10px; font-weight: bold;">Deck: 20</span>
                 </div>
             </div>
             
-            <div id="player-hand" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                </div>
+            <div id="player-hand" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
         </div>
     </div>
 

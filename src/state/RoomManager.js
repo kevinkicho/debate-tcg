@@ -8,9 +8,7 @@ class RoomManager {
             this.rooms.set(roomId, {
                 id: roomId,
                 players: {},
-                topic: null,
-                currentTurn: null,
-                publicSupport: 0,
+                topic: "The Annual Budget Proposal",
                 status: 'waiting'
             });
         }
@@ -21,7 +19,6 @@ class RoomManager {
         return this.rooms.get(roomId);
     }
 
-    // Helper function to shuffle an array (Fisher-Yates algorithm)
     shuffleArray(array) {
         let currentIndex = array.length, randomIndex;
         while (currentIndex !== 0) {
@@ -32,24 +29,21 @@ class RoomManager {
         return array;
     }
 
-    // UPDATED: Now handles shuffling and drawing the initial 5 cards
     addPlayerToRoom(roomId, playerId, playerData, deckData = []) {
         const room = this.getRoom(roomId);
         if (room) {
-            // 1. Copy and shuffle the deck
             const shuffledDeck = this.shuffleArray([...deckData]);
-            
-            // 2. Draw the first 5 cards for the hand
             const startingHand = shuffledDeck.splice(0, 5);
 
             room.players[playerId] = {
                 ...playerData,
+                points: 0, // Race to 50!
                 politicalCapital: 10,
-                deck: shuffledDeck,    // The remaining 15 cards
-                hand: startingHand,    // The 5 playable cards
-                board: []
+                deck: shuffledDeck,
+                hand: startingHand
             };
             
+            // Activate if 2 entities are in the room (Human vs Human OR Human vs AI)
             if (Object.keys(room.players).length === 2) {
                 room.status = 'active';
             }

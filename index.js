@@ -9,10 +9,8 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 
-// Basic health check route
-app.get('/', (req, res) => {
-    res.send({ status: 'Debate TCG Server is running' });
-});
+// Serve all files in this folder to the browser over HTTP
+app.use(express.static(__dirname));
 
 // Initialize Socket.io networking
 setupSocketIO(server);
@@ -20,4 +18,5 @@ setupSocketIO(server);
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
+    console.log(`--> Play the game by opening: http://localhost:${PORT}`);
 });
