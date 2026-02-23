@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Political TCG Card Schema",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "translation": { "type": "string" },
+    "type": { 
+      "type": "string",
+      "enum": ["Character Trait", "Action", "Policy Action", "Hazard", "Trap Card", "Ultimate Buff", "Ultimate Attack", "Faction", "Defense", "Momentum Builder", "Backroom Deal", "Delay Tactic", "Board Control", "Board Wipe", "Information War", "Echo Chamber", "Resource Gen", "Infrastructure", "Public Image Event", "Event", "Empty Promise", "Sneak Attack", "Save/Counter", "Geographic Divider"]
+    },
+    "cost": { "type": "integer", "minimum": 0 },
+    "effect": { "type": "string" },
+    "flavorText": { "type": "string" },
+    "learningGoal": { "type": "string" }
+  },
+  "required": ["name", "type", "cost", "effect"]
+}
