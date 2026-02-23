@@ -2,79 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Floor Debate TCG</title>
+    <title>USA Political TCG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="deck-builder-screen">
-        <h1>Draft Your Arguments</h1>
-        <p>Select exactly 20 cards for your debate deck. Current: <span id="deck-count">0</span>/20</p>
-        
-        <div class="deck-builder-container">
-            <div id="card-library">
-                <h3>Card Library</h3>
-                <div id="library-grid"></div>
+<body class="bg-slate-900 text-white font-sans overflow-hidden">
+    <div id="lobby-screen" class="flex flex-col items-center justify-center min-h-screen">
+        <h1 class="text-6xl font-black mb-8 text-blue-500 italic">DEBATE TCG</h1>
+        <div class="bg-slate-800 p-8 rounded-2xl border-2 border-slate-700 w-full max-w-md">
+            <input id="player-name" type="text" placeholder="Candidate Name" class="w-full p-3 rounded text-black mb-4">
+            <input id="room-id" type="text" placeholder="Room ID" class="w-full p-3 rounded text-black mb-4">
+            <div class="grid grid-cols-2 gap-4">
+                <button id="join-btn" class="bg-blue-600 p-3 rounded font-black uppercase">Join</button>
+                <button id="join-ai-btn" class="bg-emerald-600 p-3 rounded font-black uppercase">Vs AI</button>
             </div>
-            
-            <div id="active-deck">
-                <h3>Your Deck</h3>
-                <div id="deck-list"></div>
-            </div>
-        </div>
-        
-        <button id="save-deck-btn" disabled>Save Deck & Proceed</button>
-    </div>
-
-    <div id="lobby-screen" class="hidden">
-        <h1>Welcome to the Chamber</h1>
-        <input type="text" id="player-name" placeholder="Enter your name">
-        <input type="text" id="room-id" placeholder="Enter Room ID (e.g., room-1)">
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button id="join-btn" style="flex: 1;">Wait for Human</button>
-            <button id="join-ai-btn" style="flex: 1; background: #8e44ad; color: white; border: none; border-radius: 5px; cursor: pointer;">Play vs AI</button>
-        </div>
-        <p id="lobby-message"></p>
-    </div>
-
-    <div id="game-screen" class="hidden">
-        <div id="status-bar" style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-            <div>
-                <h2 style="margin: 0;">Room: <span id="display-room"></span></h2>
-                <p style="margin: 5px 0 0 0; color: #7f8c8d;" id="system-message">Game starting...</p>
-            </div>
-            <div style="text-align: right;">
-                <h3 style="margin: 0; color: #2980b9;">My Points: <span id="display-my-points">0</span> / 50</h3>
-                <h3 style="margin: 5px 0 0 0; color: #e74c3c;">Opponent Points: <span id="display-opp-points">0</span> / 50</h3>
-            </div>
-        </div>
-
-        <div id="board-area" style="background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px dashed #7f8c8d; min-height: 250px; display: flex; flex-direction: column;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;">The Resolution Desk</h3>
-                <strong>Topic:</strong> The Annual Budget Proposal
-            </div>
-            
-            <div id="speech-log" style="flex: 1; background: white; border-radius: 5px; padding: 15px; overflow-y: auto; max-height: 300px; display: flex; flex-direction: column; gap: 15px;">
-                <div style="text-align: center; color: #95a5a6; font-style: italic;">Awaiting opening arguments...</div>
-            </div>
-        </div>
-
-        <div id="hand-area" style="background: #34495e; padding: 15px; border-radius: 8px; color: white;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">Your Hand</h3>
-                <div>
-                    <span style="margin-right: 15px;">Political Capital: <strong id="display-capital">10</strong></span>
-                    <button id="draw-btn" class="card-btn" style="background: #27ae60;">Draw Card (Cost: 1)</button>
-                    <span id="cards-left-label" style="margin-left: 10px; font-weight: bold;">Deck: 20</span>
-                </div>
-            </div>
-            
-            <div id="player-hand" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            <p id="lobby-message" class="mt-4 text-center hidden"></p>
         </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <div id="game-screen" class="hidden h-screen flex flex-col p-6">
+        <div class="flex justify-between items-start mb-6">
+            <div class="bg-blue-900 p-4 rounded-xl border-2 border-blue-400">
+                <span id="display-my-points" class="text-4xl font-black">0</span>/50 Support
+                <div class="text-yellow-400 font-bold">Capital: $<span id="display-capital">5</span></div>
+            </div>
+            <div class="bg-red-900 p-4 rounded-xl border-2 border-red-400 text-right">
+                <span id="display-opp-points" class="text-4xl font-black">0</span>/50 Support
+            </div>
+        </div>
+        <div id="speech-log" class="flex-grow bg-slate-950/50 rounded-2xl p-6 overflow-y-auto mb-6 flex flex-col gap-4 border border-slate-800 shadow-inner"></div>
+        <div id="player-hand" class="flex justify-center gap-4 h-64 overflow-x-auto px-4 py-2"></div>
+        <button id="draw-btn" class="bg-yellow-500 text-slate-900 px-10 py-3 rounded-full font-black mx-auto block mb-4">DRAW POLICY</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="src/app.js"></script>
 </body>
 </html>

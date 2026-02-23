@@ -1,70 +1,73 @@
+const masterData = require('../../political_tcg_master.json');
+const { v4: uuidv4 } = require('uuid');
+
 class RoomManager {
     constructor() {
-        this.rooms = new Map();
-    }
-
-    createRoom(roomId) {
-        if (!this.rooms.has(roomId)) {
-            this.rooms.set(roomId, {
-                id: roomId,
-                players: {},
-                topic: "The Annual Budget Proposal",
-                status: 'waiting'
-            });
-        }
-        return this.rooms.get(roomId);
+        this.rooms = {};
     }
 
     getRoom(roomId) {
-        return this.rooms.get(roomId);
+        return this.rooms[roomId];
     }
 
-    shuffleArray(array) {
-        let currentIndex = array.length, randomIndex;
-        while (currentIndex !== 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-        }
-        return array;
-    }
+    createRoom(roomId, playerInfo) {
+        const stateConfig = masterData.states[playerInfo.stateCode] || { cards: [] };
+        const initialDeck = stateConfig.cards.map(card => ({
+            ...card,
+            instanceId: uuidv4(),
+            ownerId: playerInfo.id
+        }));
 
-    addPlayerToRoom(roomId, playerId, playerData, deckData = []) {
-        const room = this.getRoom(roomId);
-        if (room) {
-            const shuffledDeck = this.shuffleArray([...deckData]);
-            const startingHand = shuffledDeck.splice(0, 5);
-
-            room.players[playerId] = {
-                ...playerData,
-                points: 0, // Race to 50!
-                politicalCapital: 10,
-                deck: shuffledDeck,
-                hand: startingHand
-            };
-            
-            // Activate if 2 entities are in the room (Human vs Human OR Human vs AI)
-            if (Object.keys(room.players).length === 2) {
-                room.status = 'active';
-            }
-        }
-        return room;
-    }
-
-    removePlayer(roomId, playerId) {
-        const room = this.getRoom(roomId);
-        if (room && room.players[playerId]) {
-            delete room.players[playerId];
-            if (Object.keys(room.players).length === 0) {
-                this.rooms.delete(roomId);
-            } else {
-                room.status = 'waiting';
-            }
-        }
+        this.rooms[roomId] = {
+            id: roomId,
+            status: 'waiting',
+            activePlayerIndex: 0,
+            players: {
+                [playerInfo.id]: {
+                    id: playerInfo.id,
+                    name: playerInfo.name,
+                    state: playerInfo.stateCode,
+                    points: 0,
+                    politicalCapital: 5,
+                    deck: this._shuffle(initialDeck),
+                    hand: [],
+                    isAI: false
+                }
+            },
+            playerIds: [playerInfo.id]
+        };
+        return this.rooms[roomId];
     }
 
     deleteRoom(roomId) {
-        this.rooms.delete(roomId);
+        if (this.rooms[roomId]) {
+            delete this.rooms[roomId];
+            return true;
+        }
+        return false;
+    }
+
+    playCard(roomId, playerId, cardInstanceId) {
+        const room = this.rooms[roomId];
+        const player = room.players[playerId];
+        const cardIdx = player.hand.findIndex(c => String(c.instanceId) === String(cardInstanceId));
+        
+        if (cardIdx === -1) return { success: false, message: "Card not in hand" };
+
+        const card = player.hand[cardIdx];
+        player.politicalCapital -= card.cost;
+        player.hand.splice(cardIdx, 1);
+        player.points += 10;
+
+        return { success: true, cardPlayed: card, gameOver: player.points >= 50 };
+    }
+
+    _shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     }
 }
 

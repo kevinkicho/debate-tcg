@@ -1,131 +1,50 @@
 import { NetworkClient } from './network.js';
 import { GameUI } from './ui.js';
-import { DeckBuilder } from './deckBuilder.js';
 
-const SERVER_URL = 'http://localhost:3000';
-
-const network = new NetworkClient(SERVER_URL);
+const network = new NetworkClient(window.location.origin);
 const ui = new GameUI();
-let draftDeck = []; 
 
-const builder = new DeckBuilder((savedDeck) => {
-    draftDeck = savedDeck;
-    document.getElementById('lobby-screen').classList.remove('hidden');
-});
-
-network.onStateUpdate = (roomState) => {
+network.onStateUpdate = (state) => {
     ui.showGameScreen(network.roomId);
-    
-    // Update Scoreboard
-    const myPlayerData = roomState.players[network.socket.id];
-    if (myPlayerData) {
-        document.getElementById('display-my-points').innerText = myPlayerData.points;
-        document.getElementById('display-capital').innerText = myPlayerData.politicalCapital;
-        document.getElementById('cards-left-label').innerText = `Deck: ${myPlayerData.deck.length}`;
-        
-        if (roomState.status === 'active') {
-            renderHandToBoard(myPlayerData.hand);
-        }
+    const me = state.players[network.socket.id];
+    if (me) {
+        document.getElementById('display-my-points').innerText = me.points;
+        document.getElementById('display-capital').innerText = me.politicalCapital;
+        renderHand(me.hand);
     }
-
-    // Find Opponent Score
-    const opponentId = Object.keys(roomState.players).find(id => id !== network.socket.id);
-    if (opponentId) {
-        document.getElementById('display-opp-points').innerText = roomState.players[opponentId].points;
-    }
-
-    if (roomState.status === 'waiting') {
-        document.getElementById('lobby-message').innerText = 'Waiting for opponent to join...';
-        document.getElementById('lobby-message').classList.remove('hidden');
-    } else {
-        document.getElementById('lobby-message').classList.add('hidden');
-    }
+    const oppId = Object.keys(state.players).find(id => id !== network.socket.id);
+    if (oppId) document.getElementById('display-opp-points').innerText = state.players[oppId].points;
 };
 
-// Listeners for the AI Event System
-network.socket.on('speech_generated', (payload) => {
-    const log = document.getElementById('speech-log');
-    if(log.innerHTML.includes('Awaiting opening arguments')) log.innerHTML = '';
-
-    const align = payload.isAI ? 'flex-start' : 'flex-end';
-    const bgColor = payload.isAI ? '#ecf0f1' : '#dff9fb';
-    const border = payload.isAI ? '1px solid #bdc3c7' : '1px solid #7ed6df';
-
-    const bubble = document.createElement('div');
-    bubble.style.alignSelf = align;
-    bubble.style.background = bgColor;
-    bubble.style.border = border;
-    bubble.style.padding = '10px 15px';
-    bubble.style.borderRadius = '8px';
-    bubble.style.maxWidth = '80%';
-
-    bubble.innerHTML = `
-        <small style="color: #7f8c8d; display: block; margin-bottom: 5px;">
-            <strong>${payload.speakerName}</strong> used [${payload.cardName}]
-        </small>
-        <span style="font-size: 16px;">"${payload.speechText}"</span>
-    `;
-    
-    log.appendChild(bubble);
-    log.scrollTop = log.scrollHeight; // Auto-scroll to bottom
-});
-
-network.socket.on('system_message', (payload) => {
-    document.getElementById('system-message').innerText = payload.message;
-});
-
-network.socket.on('game_over', (payload) => {
-    alert(`GAME OVER! ${payload.winner} has reached 50 points and won the debate!`);
-});
-
-network.socket.on('play_error', (payload) => {
-    alert(payload.message);
-});
-
-// Lobby Buttons
-document.getElementById('join-btn').addEventListener('click', () => {
-    const playerName = document.getElementById('player-name').value;
-    const roomId = document.getElementById('room-id').value;
-    if (playerName && roomId) network.joinRoom(roomId, playerName, draftDeck);
-});
-
-document.getElementById('join-ai-btn').addEventListener('click', () => {
-    const playerName = document.getElementById('player-name').value;
-    const roomId = document.getElementById('room-id').value;
-    if (playerName && roomId) {
-        network.joinAIRoom(roomId, playerName, draftDeck);
-    }
-});
-
-document.getElementById('draw-btn').addEventListener('click', () => {
-    network.drawCard();
-});
-
-function renderHandToBoard(currentHandArray) {
-    const handContainer = document.getElementById('player-hand');
-    handContainer.innerHTML = ''; 
-
-    currentHandArray.forEach(card => {
-        const btn = document.createElement('button');
-        btn.className = 'card-btn';
-        
-        btn.setAttribute('data-instance-id', card.instanceId); 
-        btn.setAttribute('data-type', card.type);
-        btn.setAttribute('data-cost', card.cost);
-        btn.setAttribute('data-name', card.name); 
-        btn.innerText = `Play "${card.name}" (Cost: ${card.cost})`;
-        
-        handContainer.appendChild(btn);
+function renderHand(hand) {
+    const container = document.getElementById('player-hand');
+    container.innerHTML = '';
+    hand.forEach(card => {
+        const el = document.createElement('div');
+        el.className = 'w-48 h-64 bg-white text-black rounded-lg p-3 flex flex-col border-4 border-slate-300 cursor-pointer shadow-lg hover:-translate-y-2 transition-transform';
+        el.innerHTML = `
+            <div class="flex justify-between font-bold border-b pb-1 mb-2">
+                <span class="text-[10px] uppercase truncate">${card.name}</span>
+                <span class="bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]">${card.cost}</span>
+            </div>
+            <div class="flex-grow text-[11px] font-bold">${card.effect}</div>
+            <div class="text-[8px] text-slate-400 italic">"${card.flavorText}"</div>
+        `;
+        el.onclick = () => network.playCard(card.instanceId, card.type, card.name, card.cost);
+        container.appendChild(el);
     });
 }
 
-document.getElementById('player-hand').addEventListener('click', (e) => {
-    if (e.target.classList.contains('card-btn')) {
-        const instanceId = e.target.getAttribute('data-instance-id'); 
-        const cardType = e.target.getAttribute('data-type');
-        const cardName = e.target.getAttribute('data-name');
-        const cost = parseInt(e.target.getAttribute('data-cost'), 10);
-        
-        network.playCard(instanceId, cardType, cardName, cost);
-    }
-});
+document.getElementById('join-btn').onclick = () => {
+    const name = document.getElementById('player-name').value;
+    const room = document.getElementById('room-id').value;
+    if (name && room) network.joinRoom(room, name, "54CA"); // Default to CA for testing
+};
+
+document.getElementById('join-ai-btn').onclick = () => {
+    const name = document.getElementById('player-name').value;
+    const room = document.getElementById('room-id').value;
+    if (name && room) network.joinAIRoom(room, name, "54CA");
+};
+
+document.getElementById('draw-btn').onclick = () => network.drawCard();
