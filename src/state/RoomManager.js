@@ -88,13 +88,13 @@ class RoomManager {
                 const step = 0.1;
                 buff.duration -= step;
 
-                // Handle Passive Generation (every second-ish)
+                // Handle Passive Generation (independently for each buff)
                 if (buff.type === 'passive' && !isPaused) {
-                    player._passiveAccumulator = (player._passiveAccumulator || 0) + step;
-                    if (player._passiveAccumulator >= 10) { // roughly every 10 update cycles (1 sec)
+                    buff.accumulator = (buff.accumulator || 0) + step;
+                    if (buff.accumulator >= 2) { // roughly every 2 seconds
                         if (buff.stat === 'Capital') player.politicalCapital += buff.value;
                         if (buff.stat === 'Support') player.points += buff.value;
-                        player._passiveAccumulator = 0;
+                        buff.accumulator = 0;
                     }
                 }
 
@@ -235,7 +235,7 @@ class RoomManager {
         player.fatigue = 0; // Reset fatigue on play!
         player.costMod = 'none'; // Reset cost multiplier
 
-        const effectApplied = this._applyEffect(room, playerId, card.effect);
+        const effectApplied = this._applyEffect(room, playerId, card.effect, card.action);
         if (!effectApplied) {
             player.points += Math.max(1, card.cost);
         }
@@ -255,34 +255,58 @@ class RoomManager {
         };
     }
 
-    _applyEffect(room, playerId, effectText) {
-        if (!effectText) return false;
+    _applyEffect(room, playerId, effectText, structuredAction = null) {
+        if (!effectText && !structuredAction) return false;
 
         const player = room.players[playerId];
         const opponentId = room.playerIds.find(id => id !== playerId);
         const opponent = room.players[opponentId];
         let changed = false;
 
-        // --- DIRECT STAT CHANGES ---
-        const gainCapMatch = effectText.match(/Gain \+?(\d+) Capital/i);
-        if (gainCapMatch) { player.politicalCapital += parseInt(gainCapMatch[1]); changed = true; }
+        // 1. Handle Structured Actions First (Higher Reliability)
+        if (structuredAction) {
+            // Implementation for structured actions can be expanded here
+            // For now, we continue with enhanced text parsing as it covers the existing data best
+        }
 
-        const gainSupMatch = effectText.match(/Gain \+?(\d+) Support/i);
-        if (gainSupMatch) { player.points += parseInt(gainSupMatch[1]); changed = true; }
+        // 2. Enhanced Text Parsing
+        const text = effectText || '';
 
-        const drainCapMatch = effectText.match(/Drain (\d+) Capital/i);
-        if (drainCapMatch && opponent) { opponent.politicalCapital = Math.max(0, opponent.politicalCapital - parseInt(drainCapMatch[1])); changed = true; }
+        // --- CAPITAL GAINS ---
+        const gainCapMatch = text.match(/(?:Gain|Start with) \+?(\d+) (?:Political )?Capital/i);
+        if (gainCapMatch) {
+            player.politicalCapital += parseInt(gainCapMatch[1]);
+            changed = true;
+        }
 
-        if (effectText.match(/Drain all opponent's Capital/i) && opponent) {
+        // --- SUPPORT GAINS ---
+        const gainSupMatch = text.match(/(?:Gain|Double) \+?(\d+) Support/i) || text.match(/Heal (\d+) Support/i);
+        if (gainSupMatch) {
+            player.points += parseInt(gainSupMatch[1]);
+            changed = true;
+        }
+
+        // --- CAPITAL DRAIN ---
+        const drainCapMatch = text.match(/Drain (\d+) (?:Political )?Capital/i) || text.match(/lose (\d+) Capital/i);
+        if (drainCapMatch && opponent) {
+            opponent.politicalCapital = Math.max(0, opponent.politicalCapital - parseInt(drainCapMatch[1]));
+            changed = true;
+        }
+
+        if (text.match(/Drain all opponent's Capital/i) && opponent) {
             opponent.politicalCapital = 0;
             changed = true;
         }
 
-        const loseSupMatch = effectText.match(/Opponent loses (\d+) Support/i);
-        if (loseSupMatch && opponent) { opponent.points = Math.max(0, opponent.points - parseInt(loseSupMatch[1])); changed = true; }
+        // --- SUPPORT DRAIN ---
+        const loseSupMatch = text.match(/(?:Opponent loses|Drain) (\d+) Support/i);
+        if (loseSupMatch && opponent) {
+            opponent.points = Math.max(0, opponent.points - parseInt(loseSupMatch[1]));
+            changed = true;
+        }
 
         // --- HAND DISRUPTION ---
-        const discardMatch = effectText.match(/Discard (\d+) card/i);
+        const discardMatch = text.match(/Discard (\d+) card/i);
         if (discardMatch && opponent && opponent.hand.length > 0) {
             for (let i = 0; i < parseInt(discardMatch[1]); i++) {
                 if (opponent.hand.length > 0) opponent.hand.splice(Math.floor(Math.random() * opponent.hand.length), 1);
@@ -290,7 +314,7 @@ class RoomManager {
             changed = true;
         }
 
-        if (effectText.match(/Force opponent to discard half their hand/i) && opponent) {
+        if (text.match(/Force opponent to discard half their hand/i) && opponent) {
             const count = Math.floor(opponent.hand.length / 2);
             for (let i = 0; i < count; i++) {
                 opponent.hand.splice(Math.floor(Math.random() * opponent.hand.length), 1);
@@ -298,30 +322,31 @@ class RoomManager {
             changed = true;
         }
 
-        // --- TURN FLOW ---
-        if (effectText.match(/Skip their turn/i) && opponent) {
+        // --- TURN FLOW & ATB ---
+        if (text.match(/Skip (?:their|your next) turn/i) && opponent) {
             opponent.skipNextTurn = true;
             changed = true;
         }
 
-        if (effectText.match(/Delay opponent|hazardous AQI|stuck on the PCH/i) && opponent) {
-            opponent.atb = Math.max(0, opponent.atb - 40);
+        if (text.match(/Delay opponent|hazardous AQI|stuck on the PCH|must skip their turn/i) && opponent) {
+            opponent.atb = Math.max(0, opponent.atb - 50);
             changed = true;
         }
 
         // --- COST MODIFIERS ---
-        if (effectText.match(/next card costs double/i) && opponent) {
+        if (text.match(/next card costs double/i) && opponent) {
             opponent.costMod = 'double';
             changed = true;
         }
-        if (effectText.match(/cards cost (\d+) less/i)) {
-            const m = effectText.match(/cards cost (\d+) less/i);
-            player._costDiscount = parseInt(m[1]); // Persistence logic would need a buff for this
+
+        const discountMatch = text.match(/cards cost (\d+) less/i);
+        if (discountMatch) {
+            player._costDiscount = (player._costDiscount || 0) + parseInt(discountMatch[1]);
             changed = true;
         }
 
         // --- PASSIVE BUFFS (FACTIONS) ---
-        const passiveMatch = effectText.match(/Steady stream of \+1 (Capital|Support)/i);
+        const passiveMatch = text.match(/Steady stream of \+1 (Capital|Support)/i);
         if (passiveMatch) {
             const stat = passiveMatch[1];
             player.buffs.push({
@@ -337,12 +362,12 @@ class RoomManager {
         }
 
         // --- MISC BUFFS ---
-        if (effectText.match(/Haste/i)) {
+        if (text.match(/Haste/i)) {
             player.buffs.push({ id: uuidv4(), name: 'Speed Campaign', type: 'haste', duration: 20, msg: 'ATB filling faster!' });
             changed = true;
         }
 
-        if (effectText.match(/Slow opponent|Bureaucracy/i) && opponent) {
+        if (text.match(/Slow opponent|Bureaucracy/i) && opponent) {
             opponent.buffs.push({ id: uuidv4(), name: 'Red Tape', type: 'slow', duration: 20, msg: 'ATB slowed by bureaucracy!' });
             changed = true;
         }
@@ -422,6 +447,38 @@ class RoomManager {
             return true;
         }
         return false;
+    }
+
+    getRoomStats(roomId) {
+        const room = this.getRoom(roomId);
+        if (!room) return null;
+
+        const players = Object.values(room.players);
+        if (players.length < 2) return null;
+
+        const p1 = players[0];
+        const p2 = players[1];
+
+        // Momentum: Based on recent point gains and active buffs
+        const p1Power = p1.points + (p1.buffs.length * 2);
+        const p2Power = p2.points + (p2.buffs.length * 2);
+        const totalPower = p1Power + p2Power || 1;
+
+        // Win Probability: Weighted towards current score and capital
+        const p1Score = (p1.points * 2) + p1.politicalCapital;
+        const p2Score = (p2.points * 2) + p2.politicalCapital;
+        const totalScore = p1Score + p2Score || 1;
+
+        return {
+            momentum: (p1Power / totalPower) * 100,
+            winProb: (p1Score / totalScore) * 100,
+            players: players.map(p => ({
+                id: p.id,
+                name: p.name,
+                buffCount: p.buffs.length,
+                handSize: p.hand.length
+            }))
+        };
     }
 
     _shuffle(array) {

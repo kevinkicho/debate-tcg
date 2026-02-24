@@ -8,7 +8,10 @@ export class NetworkClient {
             if (this.onStateUpdate) this.onStateUpdate(state);
         });
 
-        this.socket.on('play_error', (p) => alert(p.message));
+        this.socket.on('play_error', (p) => {
+            console.warn('Game Error:', p.message);
+            if (this.onPlayError) this.onPlayError(p.message);
+        });
 
         this.socket.on('system_message', (payload) => {
             if (this.onSystemMessage) this.onSystemMessage(payload.message);

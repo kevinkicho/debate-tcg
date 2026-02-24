@@ -100,12 +100,13 @@ body {
     box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
     position: relative;
     cursor: help;
-    transition: transform 0.2s;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .buff-icon:hover {
-    transform: scale(1.2);
+    transform: scale(1.6) translateY(-5px);
     z-index: 50;
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.6);
 }
 
 .buff-haste {
@@ -152,11 +153,12 @@ body {
 /* Main Containers */
 #player-hand {
     /* Large top padding to allow cards to hover upwards without clipping */
-    padding-top: 150px;
-    margin-top: -100px;
+    padding-top: 100px;
+    margin-top: -50px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     overflow-y: visible !important;
+    min-height: 280px !important;
 }
 
 #player-hand::-webkit-scrollbar {
@@ -245,7 +247,7 @@ body {
 }
 
 .card-wrapper:hover .tcg-card {
-    transform: translateY(-120px) scale(1.1) rotate(2deg);
+    transform: translateY(-80px) scale(1.1) rotate(2deg);
     box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
     border-color: var(--gold);
 }
@@ -306,7 +308,7 @@ body {
 }
 
 .card-wrapper:hover .tcg-card {
-    transform: translateY(-60px) scale(1.2) rotate(2deg);
+    transform: translateY(-40px) scale(1.2) rotate(2deg);
     box-shadow: 0 40px 70px -15px rgba(0, 0, 0, 0.7);
     border-color: #60a5fa;
 }
@@ -452,11 +454,6 @@ body {
 }
 
 /* Intent Indicators */
-.intent-visible {
-    opacity: 1 !important;
-    animation: pulse-intent 1.5s infinite;
-}
-
 @keyframes pulse-intent {
 
     0%,
