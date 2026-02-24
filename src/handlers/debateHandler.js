@@ -94,16 +94,15 @@ function registerDebateHandlers(io, socket) {
                 io.to(roomId).emit('game_over', { winner: result.winner });
             }
         } else {
-            // AI draws if it can't play and has political capital
-            if (aiPlayer.politicalCapital >= 1 && aiPlayer.deck.length > 0) {
-                aiPlayer.politicalCapital -= 1;
+            // AI draws if it can afford it and has cards
+            if (aiPlayer.politicalCapital >= 5 && aiPlayer.deck.length > 0) {
                 roomManager.drawCard(roomId, aiId);
-                aiPlayer.atb = 0; // Consumption
+                aiPlayer.atb = 0;
                 io.to(roomId).emit('room_state', room);
                 io.to(roomId).emit('system_message', { message: `${aiPlayer.name} has drafted a new policy platform.` });
-            } else if (aiPlayer.politicalCapital < 1) {
+            } else {
                 roomManager.fundraise(roomId, aiId);
-                aiPlayer.atb = 0; // Consumption
+                aiPlayer.atb = 0;
                 io.to(roomId).emit('room_state', room);
                 io.to(roomId).emit('system_message', { message: `${aiPlayer.name} is hosting a high-stakes fundraising gala.` });
             }
@@ -194,59 +193,62 @@ function registerDebateHandlers(io, socket) {
         }
     });
 
-    // 5. Game Loop (10Hz - ATB Progression & State Sync)
+    // 5. Game Loop (10Hz)
     if (!socket.gameLoop) {
         socket.gameLoop = setInterval(() => {
-            if (socket.roomId) {
-                const room = roomManager.getRoom(socket.roomId);
-                if (room && room.status === 'active') {
-                    roomManager.updateATB(socket.roomId);
+            if (!socket.roomId) return;
+            const room = roomManager.getRoom(socket.roomId);
+            if (!room) return;
 
-                    // Passive capital every 15s (150 ticks at 100ms)
-                    if (room.capTick === undefined) room.capTick = 0;
-                    room.capTick++;
-                    if (room.capTick >= 150) {
-                        Object.values(room.players).forEach(p => p.politicalCapital += 1);
-                        room.capTick = 0;
-                    }
+            if (room.status === 'active') {
+                roomManager.updateATB(socket.roomId);
 
-                    // Town Hall Trigger every ~90s (900 ticks)
-                    if (room.townHallTick === undefined) room.townHallTick = 0;
-                    room.townHallTick++;
-                    if (room.townHallTick >= 900) {
-                        const townHall = roomManager.triggerTownHall(socket.roomId);
-                        if (townHall) {
-                            io.to(socket.roomId).emit('townhall_started', townHall);
-                            io.to(socket.roomId).emit('system_message', { message: "🚨 GLOBAL EVENT: A Town Hall meeting is underway. All actions paused!" });
-                        }
-                        room.townHallTick = 0;
-                    }
-
-                    io.to(socket.roomId).emit('room_state', room);
-
-                    // Automated AI check (Only if not in Town Hall)
-                    if (!room.townHall) {
-                        const aiId = room.playerIds.find(id => room.players[id].isAI);
-                        if (aiId && room.players[aiId].atb >= 100) {
-                            executeAITurn(socket.roomId, aiId, io);
-                        }
-                    }
-                } else if (room && room.status === 'paused' && room.townHall) {
-                    // AI Response for Town Hall
-                    const aiId = room.playerIds.find(id => room.players[id].isAI);
-                    if (aiId && !room.townHall.responses[aiId]) {
-                        setTimeout(() => {
-                            roomManager.submitTownHall(socket.roomId, aiId, 'yes'); // AI always says yes for now
-                            io.to(socket.roomId).emit('room_state', room);
-                            if (!room.townHall) {
-                                io.to(socket.roomId).emit('townhall_ended');
-                                io.to(socket.roomId).emit('system_message', { message: "The Town Hall has concluded. Resume the debate!" });
-                            }
-                        }, 2000);
-                    }
-                    // Still sync state while paused
-                    io.to(socket.roomId).emit('room_state', room);
+                // Passive capital every 15s (150 ticks)
+                if (room.capTick === undefined) room.capTick = 0;
+                room.capTick++;
+                if (room.capTick >= 150) {
+                    Object.values(room.players).forEach(p => p.politicalCapital += 1);
+                    room.capTick = 0;
                 }
+
+                // Town Hall Trigger every ~90s (900 ticks)
+                if (room.townHallTick === undefined) room.townHallTick = 0;
+                room.townHallTick++;
+                if (room.townHallTick >= 900) {
+                    const townHall = roomManager.triggerTownHall(socket.roomId);
+                    if (townHall) {
+                        io.to(socket.roomId).emit('townhall_started', townHall);
+                        io.to(socket.roomId).emit('system_message', { message: "🚨 GLOBAL EVENT: A Town Hall meeting is underway. All actions paused!" });
+                    }
+                    room.townHallTick = 0;
+                }
+
+                // Sync Stats
+                room.stats = roomManager.getRoomStats(socket.roomId);
+                io.to(socket.roomId).emit('room_state', room);
+
+                // Automated AI check
+                if (!room.townHall) {
+                    const aiId = room.playerIds.find(id => room.players[id].isAI);
+                    if (aiId && room.players[aiId].atb >= 100) {
+                        executeAITurn(socket.roomId, aiId, io);
+                    }
+                }
+            } else if (room.status === 'paused' && room.townHall) {
+                // AI Response for Town Hall
+                const aiId = room.playerIds.find(id => room.players[id].isAI);
+                if (aiId && !room.townHall.responses[aiId] && !room.townHall.aiThinking) {
+                    room.townHall.aiThinking = true;
+                    setTimeout(() => {
+                        roomManager.submitTownHall(socket.roomId, aiId, 'yes');
+                        io.to(socket.roomId).emit('room_state', room);
+                        if (!room.townHall) {
+                            io.to(socket.roomId).emit('townhall_ended');
+                            io.to(socket.roomId).emit('system_message', { message: "The Town Hall has concluded. Resume the debate!" });
+                        }
+                    }, 2000);
+                }
+                io.to(socket.roomId).emit('room_state', room);
             }
         }, 100);
     }

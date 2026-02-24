@@ -112,15 +112,20 @@ export class UIManager {
             link.onmouseleave = () => onLeave();
         });
 
-        log.prepend(item);
+        log.appendChild(item);
 
         if (Math.random() > 0.4) {
             const quip = document.createElement('div');
             quip.className = 'history-item text-[9px] text-red-400/60 italic border-l-2 border-red-500/30 pl-3';
             quip.innerText = `🎙️ ${this.punditQuips[Math.floor(Math.random() * this.punditQuips.length)]}`;
-            log.prepend(quip);
+            log.appendChild(quip);
         }
 
-        if (log.children.length > 15) log.lastChild.remove();
+        if (log.children.length > 20) log.firstChild.remove();
+
+        // Auto-scroll to bottom
+        setTimeout(() => {
+            log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
+        }, 50);
     }
 }

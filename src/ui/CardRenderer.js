@@ -91,9 +91,12 @@ export class CardRenderer {
         container.innerHTML = '';
         (buffs || []).forEach(buff => {
             const icon = document.createElement('div');
-            icon.className = `buff-icon buff-${buff.type}`;
-            icon.innerText = buff.name[0];
-            icon.title = `${buff.name}: ${buff.msg}`;
+            // Class depends on stat: buff-capital, buff-support
+            const statClass = (buff.stat || '').toLowerCase();
+            icon.className = `buff-icon buff-${statClass} buff-${buff.type}`;
+            icon.innerText = (buff.stat || 'B')[0]; // First letter of stat
+            icon.title = `${buff.name}: +${buff.value} ${buff.stat} per tick (${Math.ceil(buff.duration)}s left)`;
+
             const timer = document.createElement('div');
             timer.className = 'buff-timer';
             timer.innerText = Math.ceil(buff.duration) + 's';

@@ -92,55 +92,68 @@ network.onStateUpdate = (state) => {
         document.getElementById('display-opp-points').innerText = opp.points;
         document.getElementById('opp-atb-gauge').style.width = `${opp.atb}%`;
         document.getElementById('room-id-display').innerText = `HALL: ${network.roomId}`;
+    }
 
-        // 3. Campaign Stats & Odds
-        const stats = roomManager.getRoomStats ? roomManager.getRoomStats(network.roomId) : null;
-        if (stats) {
+    // 3. Campaign Stats & Odds
+    const stats = state.stats;
+    if (stats) {
+        const myStats = stats.players.find(p => p.id === network.socket.id);
+        const oppStats = stats.players.find(p => p.id !== network.socket.id);
+
+        if (myStats && oppStats) {
+            // Calculate local momentum and win probability
+            // The server sends absolute stats, we derive the local percentage
+            const myId = network.socket.id;
+            const p1 = stats.players[0];
+            const isP1 = p1.id === myId;
+
+            const localMomentum = isP1 ? stats.momentum : (100 - stats.momentum);
+            const localWinProb = isP1 ? stats.winProb : (100 - stats.winProb);
+
             const momBar = document.getElementById('momentum-bar');
             const momVal = document.getElementById('momentum-val');
-            if (momBar) momBar.style.width = `${stats.momentum}%`;
-            if (momVal) momVal.innerText = `${Math.round(stats.momentum)}%`;
+            if (momBar) momBar.style.width = `${localMomentum}%`;
+            if (momVal) momVal.innerText = `${Math.round(localMomentum)}%`;
 
             const winProbVal = document.getElementById('win-prob-val');
-            if (winProbVal) winProbVal.innerText = `${Math.round(stats.winProb)}%`;
+            if (winProbVal) winProbVal.innerText = `${Math.round(localWinProb)}%`;
 
             const oddsBreakdown = document.getElementById('odds-breakdown');
             if (oddsBreakdown) {
-                const myStats = stats.players.find(p => p.id === network.socket.id);
-                const oppStats = stats.players.find(p => p.id !== network.socket.id);
                 oddsBreakdown.innerHTML = `
-                <div class="flex justify-between text-[8px] uppercase">
-                    <span class="text-blue-400/60">Poll Advantage</span>
-                    <span class="${myStats.buffCount >= oppStats.buffCount ? 'text-emerald-400' : 'text-red-400'}">
-                        ${myStats.buffCount - oppStats.buffCount >= 0 ? '+' : ''}${myStats.buffCount - oppStats.buffCount}
-                    </span>
-                </div>
-                <div class="flex justify-between text-[8px] uppercase">
-                    <span class="text-blue-400/60">Policy Depth</span>
-                    <span class="text-white/40">${myStats.handSize} Cards</span>
-                </div>
-            `;
+                    <div class="flex justify-between text-[8px] uppercase">
+                        <span class="text-blue-400/60">Poll Advantage</span>
+                        <span class="${myStats.buffCount >= oppStats.buffCount ? 'text-emerald-400' : 'text-red-400'}">
+                            ${myStats.buffCount - oppStats.buffCount >= 0 ? '+' : ''}${myStats.buffCount - oppStats.buffCount}
+                        </span>
+                    </div>
+                    <div class="flex justify-between text-[8px] uppercase">
+                        <span class="text-blue-400/60">Policy Depth</span>
+                        <span class="text-white/40">${myStats.handSize} Cards</span>
+                    </div>
+                `;
             }
         }
-    };
+    }
+};
 
-    // Event Handlers
-    network.onSpeechGenerated = (payload) => {
-        const isPlayer = !payload.isAI;
-        const bubbleClass = isPlayer ? 'bubble-right' : 'bubble-left';
+// Event Handlers
+network.onSpeechGenerated = (payload) => {
+    const isPlayer = !payload.isAI;
+    const bubbleClass = isPlayer ? 'bubble-right' : 'bubble-left';
 
-        if (payload.cardData) GameState.cardCache[payload.cardName] = payload.cardData;
+    if (payload.cardData) GameState.cardCache[payload.cardName] = payload.cardData;
 
-        uiManager.addToHistory(
-            `${payload.speakerName} played <b class="card-preview-link cursor-help text-blue-400 underline decoration-dotted" data-card="${payload.cardName}">${payload.cardName}</b>`,
-            (name, x, y) => uiManager.showTooltip(name, x, y, (c) => cardRenderer.createCardElement(c)),
-            () => uiManager.hideTooltip()
-        );
+    uiManager.addToHistory(
+        `${payload.speakerName} played <b class="card-preview-link cursor-help text-blue-400 underline decoration-dotted" data-card="${payload.cardName}">${payload.cardName}</b>`,
+        (name, x, y) => uiManager.showTooltip(name, x, y, (c) => cardRenderer.createCardElement(c)),
+        () => uiManager.hideTooltip()
+    );
 
-        if (isPlayer) uiManager.triggerReaction('🔥');
-        else uiManager.triggerReaction('❄️');
+    if (isPlayer) uiManager.triggerReaction('🔥');
+    else uiManager.triggerReaction('❄️');
 
-        const content = `
+    const content = `
         <div class="flex flex-col ${isPlayer ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-4 duration-500">
             <span class="text-[10px] font-black uppercase opacity-40 mb-2 px-4 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full ${isPlayer ? 'bg-blue-500' : 'bg-red-500'}"></span>
@@ -151,118 +164,119 @@ network.onStateUpdate = (state) => {
             </div>
         </div>
     `;
-        addLogEntry(null, content);
-    };
+    addLogEntry(null, content);
+};
 
-    network.socket.on('draft_started', (data) => {
-        const overlay = document.getElementById('draft-overlay');
-        const choicesContainer = document.getElementById('draft-choices');
-        const title = document.getElementById('draft-title');
-        if (!overlay || !choicesContainer) return;
+network.socket.on('draft_started', (data) => {
+    const overlay = document.getElementById('draft-overlay');
+    const choicesContainer = document.getElementById('draft-choices');
+    const title = document.getElementById('draft-title');
+    if (!overlay || !choicesContainer) return;
 
-        overlay.classList.remove('hidden');
-        choicesContainer.innerHTML = '';
-        GameState.isDrafting = true;
-        GameState.selectedChoices = [];
-        GameState.maxPicks = data.pickCount || 1;
+    overlay.classList.remove('hidden');
+    choicesContainer.innerHTML = '';
+    GameState.isDrafting = true;
+    GameState.selectedChoices = [];
+    GameState.maxPicks = data.pickCount || 1;
 
-        title.innerText = data.roll === 6 ? "JACKPOT! PICK 2" : (data.fatigue > 1 ? "FATIGUED DRAFT" : "DRAFT A POLICY");
+    title.innerText = data.roll === 6 ? "JACKPOT! PICK 2" : (data.fatigue > 1 ? "FATIGUED DRAFT" : "DRAFT A POLICY");
 
-        data.options.forEach(card => {
-            GameState.cardCache[card.name] = card;
-            const cardEl = cardRenderer.createCardElement(card);
-            cardEl.classList.add('draft-choice-card');
-            cardEl.onclick = () => {
-                if (cardEl.classList.contains('opacity-20')) return;
-                cardEl.classList.add('opacity-20', 'border-yellow-400', 'scale-90');
-                GameState.selectedChoices.push(card.instanceId);
-                if (GameState.selectedChoices.length >= GameState.maxPicks) {
-                    setTimeout(() => {
-                        network.socket.emit('select_draft', { cardInstanceIds: GameState.selectedChoices });
-                        overlay.classList.add('hidden');
-                        GameState.isDrafting = false;
-                        setIntent('none');
-                        uiManager.triggerReaction('🗳️');
-                    }, 500);
-                }
-            };
-            choicesContainer.appendChild(cardEl);
-        });
+    data.options.forEach(card => {
+        GameState.cardCache[card.name] = card;
+        const cardEl = cardRenderer.createCardElement(card);
+        cardEl.classList.add('draft-choice-card');
+        cardEl.onclick = () => {
+            if (cardEl.classList.contains('opacity-20')) return;
+            cardEl.classList.add('opacity-20', 'border-yellow-400', 'scale-90');
+            GameState.selectedChoices.push(card.instanceId);
+            if (GameState.selectedChoices.length >= GameState.maxPicks) {
+                setTimeout(() => {
+                    network.socket.emit('select_draft', { cardInstanceIds: GameState.selectedChoices });
+                    overlay.classList.add('hidden');
+                    GameState.isDrafting = false;
+                    setIntent('none');
+                    uiManager.triggerReaction('🗳️');
+                }, 500);
+            }
+        };
+        choicesContainer.appendChild(cardEl);
     });
+});
 
-    network.socket.on('rally_result', (data) => {
-        uiManager.triggerRallyParticles(data.playerId === network.socket.id ? 'me' : 'opp');
-        const speaker = data.playerId === network.socket.id ? 'You' : 'Opponent';
-        uiManager.addToHistory(`${speaker} held a massive rally in Iowa!`, () => { }, () => { });
-        if (data.playerId === network.socket.id) {
-            uiManager.triggerImpact(`+$${data.capital}M CAPITAL!`, 'me');
-            setIntent('none');
-            uiManager.triggerReaction('💵');
-        }
+network.socket.on('rally_result', (data) => {
+    uiManager.triggerRallyParticles(data.playerId === network.socket.id ? 'me' : 'opp');
+    const speaker = data.playerId === network.socket.id ? 'You' : 'Opponent';
+    uiManager.addToHistory(`${speaker} held a massive rally in Iowa!`, () => { }, () => { });
+    if (data.playerId === network.socket.id) {
+        uiManager.triggerImpact(`+$${data.capital}M CAPITAL!`, 'me');
+        setIntent('none');
+        uiManager.triggerReaction('💵');
+    }
+});
+
+// Helper functions (still local for now as they are small orchestrators)
+function addLogEntry(label, content, className = '') {
+    const log = document.getElementById('speech-log');
+    if (!log) return;
+    const entry = document.createElement('div');
+    if (label === 'System') {
+        entry.className = className;
+        entry.innerText = content;
+    } else {
+        entry.innerHTML = content;
+        entry.className = 'w-full mb-4';
+    }
+    log.appendChild(entry);
+    // Use requestAnimationFrame for smoother scrolling to the actual bottom
+    requestAnimationFrame(() => {
+        log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
     });
+}
 
-    // Helper functions (still local for now as they are small orchestrators)
-    function addLogEntry(label, content, className = '') {
-        const log = document.getElementById('speech-log');
-        if (!log) return;
-        const entry = document.createElement('div');
-        if (label === 'System') {
-            entry.className = className;
-            entry.innerText = content;
-        } else {
-            entry.innerHTML = content;
-            entry.className = 'w-full mb-4';
-        }
-        log.appendChild(entry);
-        setTimeout(() => {
-            log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
-        }, 50);
+function setIntent(intent) {
+    const el = document.getElementById('my-intent');
+    if (!el) return;
+    GameState.currentIntent = intent;
+    if (intent === 'none') {
+        el.style.opacity = '0';
+    } else {
+        el.innerText = `${intent}...`;
+        el.style.opacity = '1';
     }
+}
 
-    function setIntent(intent) {
-        const el = document.getElementById('my-intent');
-        if (!el) return;
-        GameState.currentIntent = intent;
-        if (intent === 'none') {
-            el.style.opacity = '0';
-        } else {
-            el.innerText = `${intent}...`;
-            el.style.opacity = '1';
-        }
+// Global UI Event Listeners
+document.getElementById('join-btn').onclick = () => {
+    const name = document.getElementById('player-name').value;
+    const room = document.getElementById('room-id').value;
+    if (name && room) network.joinRoom(room, name, "CA");
+};
+
+document.getElementById('join-ai-btn').onclick = () => {
+    let name = document.getElementById('player-name').value;
+    let room = document.getElementById('room-id').value;
+    if (!name) name = "Candidate_" + Math.floor(Math.random() * 1000);
+    if (!room) room = "AI_Duel_" + Math.floor(Math.random() * 1000);
+    network.joinAIRoom(room, name, "CA");
+};
+
+document.getElementById('draw-btn').onclick = () => {
+    if (GameState.myCurrentAtb < 100 || GameState.isDrafting || GameState.isRoomPaused) {
+        uiManager.shakeGauge();
+        return;
     }
+    setIntent('Drafting');
+    network.drawCard();
+};
 
-    // Global UI Event Listeners
-    document.getElementById('join-btn').onclick = () => {
-        const name = document.getElementById('player-name').value;
-        const room = document.getElementById('room-id').value;
-        if (name && room) network.joinRoom(room, name, "CA");
-    };
-
-    document.getElementById('join-ai-btn').onclick = () => {
-        let name = document.getElementById('player-name').value;
-        let room = document.getElementById('room-id').value;
-        if (!name) name = "Candidate_" + Math.floor(Math.random() * 1000);
-        if (!room) room = "AI_Duel_" + Math.floor(Math.random() * 1000);
-        network.joinAIRoom(room, name, "CA");
-    };
-
-    document.getElementById('draw-btn').onclick = () => {
+const fundBtn = document.getElementById('fundraise-btn');
+if (fundBtn) {
+    fundBtn.onclick = () => {
         if (GameState.myCurrentAtb < 100 || GameState.isDrafting || GameState.isRoomPaused) {
             uiManager.shakeGauge();
             return;
         }
-        setIntent('Drafting');
-        network.drawCard();
+        setIntent('Rallying');
+        network.fundraise();
     };
-
-    const fundBtn = document.getElementById('fundraise-btn');
-    if (fundBtn) {
-        fundBtn.onclick = () => {
-            if (GameState.myCurrentAtb < 100 || GameState.isDrafting || GameState.isRoomPaused) {
-                uiManager.shakeGauge();
-                return;
-            }
-            setIntent('Rallying');
-            network.fundraise();
-        };
-    }
+}
