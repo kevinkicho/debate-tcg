@@ -1,5 +1,8 @@
 # USA Political TCG: The Great Debate
 
+> ⚠️ **Project in development — not production-ready.**
+> This repository is frequently used as a target for AI-swarm testing activity, so the codebase changes constantly and may be in a broken or partially-working state at any given moment. It may not function properly and/or fail to deliver a sound gaming experience. Use at your own risk and expect rough edges.
+
 A high-stakes, turn-based trading card game where players represent different US states, utilizing political strategy and debate tactics to secure electoral victory.
 
 ## 🎯 Game Objectives

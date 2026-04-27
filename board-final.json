@@ -1,0 +1,122 @@
+{
+  "error": {
+    "message": "per-chunk timeout: no SSE chunks for 90000ms",
+    "stack": "Error: per-chunk timeout: no SSE chunks for 90000ms\n    at BlackboardRunner.promptAgent (/mnt/c/Users/kevin/Desktop/ollama_swarm/server/src/swarm/blackboard/BlackboardRunner.ts:3669:13)\n    at async BlackboardRunner.promptPlannerSafely (/mnt/c/Users/kevin/Desktop/ollama_swarm/server/src/swarm/blackboard/BlackboardRunner.ts:3463:22)\n    at async BlackboardRunner.runPlanner (/mnt/c/Users/kevin/Desktop/ollama_swarm/server/src/swarm/blackboard/BlackboardRunner.ts:1464:63)\n    at async BlackboardRunner.planAndExecute (/mnt/c/Users/kevin/Desktop/ollama_swarm/server/src/swarm/blackboard/BlackboardRunner.ts:709:7)"
+  },
+  "phase": "planning",
+  "crashedAt": 1777256772123,
+  "config": {
+    "repoUrl": "https://github.com/kevinkicho/debate-tcg",
+    "localPath": "/mnt/c/Users/kevin/Desktop/ollama_swarm/runs/debate-tcg",
+    "agentCount": 4,
+    "rounds": 3,
+    "model": "glm-5.1:cloud",
+    "preset": "blackboard",
+    "userDirective": "RESPAWN VALIDATION: small fix to test the new health-check + respawn flow.",
+    "ambitionTiers": 1,
+    "workerModel": "gemma4:31b-cloud",
+    "dedicatedAuditor": true,
+    "auditorModel": "nemotron-3-super:cloud",
+    "continuous": false,
+    "runId": "6978dade-bd5a-412f-b39b-ff49d81d7d56"
+  },
+  "board": {
+    "todos": [],
+    "findings": []
+  },
+  "transcript": [
+    {
+      "id": "d2f1c4e6-62c8-421e-b769-b6036bcd1b86",
+      "role": "system",
+      "text": "▸▸RUN-START▸▸|runId=6978dade-bd5a-412f-b39b-ff49d81d7d56|preset=blackboard|plannerModel=glm-5.1:cloud|workerModel=gemma4:31b-cloud|agentCount=4|repoUrl=https://github.com/kevinkicho/debate-tcg",
+      "ts": 1777256452672
+    },
+    {
+      "id": "94752abd-cb50-4a17-928c-7e8ac09c0a17",
+      "role": "system",
+      "text": "Resuming existing clone at /mnt/c/Users/kevin/Desktop/ollama_swarm/runs/debate-tcg (1 prior commit, 19 changed files, 7 untracked)",
+      "ts": 1777256453285
+    },
+    {
+      "id": "cae07cf7-0087-4ce1-ad03-a641821e7e51",
+      "role": "system",
+      "text": "Per-agent models: planner=glm-5.1:cloud, workers=gemma4:31b-cloud",
+      "ts": 1777256453285
+    },
+    {
+      "id": "2499f845-37ce-413d-a3f3-fa422976b161",
+      "role": "system",
+      "text": "Per-agent models: auditor=nemotron-3-super:cloud",
+      "ts": 1777256453285
+    },
+    {
+      "id": "3091256e-5a2e-42c8-bf0f-a68000630101",
+      "role": "system",
+      "text": "Planner agent ready on port 41433",
+      "ts": 1777256459004
+    },
+    {
+      "id": "813f89ae-4f62-474f-8421-b1a17ab0521c",
+      "role": "system",
+      "text": "Worker agent agent-2 ready on port 38339",
+      "ts": 1777256540086
+    },
+    {
+      "id": "da4ffda4-1f29-4b90-bb4a-6315b09c6630",
+      "role": "system",
+      "text": "Worker agent agent-3 ready on port 43995",
+      "ts": 1777256540086
+    },
+    {
+      "id": "511e204d-2741-4cd4-ab7d-fa5ec7f36918",
+      "role": "system",
+      "text": "Worker agent agent-4 ready on port 35659",
+      "ts": 1777256540086
+    },
+    {
+      "id": "c50c2fe2-e3c7-42ca-b2d7-d28a18083445",
+      "role": "system",
+      "text": "Auditor agent agent-5 ready on port 41929 (model=nemotron-3-super:cloud). Audit calls will route here in parallel with workers.",
+      "ts": 1777256546594
+    },
+    {
+      "id": "0a3dcb15-72b1-4ed8-a3e5-9d044ad831e2",
+      "role": "system",
+      "text": "Memory: surfaced 5 prior-run lesson entry(ies) from .swarm-memory.jsonl into the planner seed.",
+      "ts": 1777256546670
+    },
+    {
+      "id": "93e526b1-7b2e-4f0f-a501-b6e9e9931a77",
+      "role": "system",
+      "text": "Design memory: surfaced north-star + roadmap (7) + 3 decision(s) from .swarm-design/ into the planner seed.",
+      "ts": 1777256546677
+    },
+    {
+      "id": "6e326563-ae3d-47f1-94f4-50dba1720485",
+      "role": "system",
+      "text": "Seed: 65 top-level entries, README 7003 chars.",
+      "ts": 1777256546678
+    },
+    {
+      "id": "325ef23b-3f6a-420c-b9ff-418f21af0d02",
+      "role": "agent",
+      "agentId": "agent-1",
+      "agentIndex": 1,
+      "text": "{\"missionStatement\":\"Validate the agent health-check and respawn pipeline by applying a small, targeted set of UI resilience fixes that were unaddressed in the prior run.\",\"criteria\":[{\"description\":\"Add the missing `atb-error-hint` element inside the ATB gauge container in index.html so that UIManager.shakeGauge produces visible error feedback instead of silently doing nothing.\",\"expectedFiles\":[\"index.html\"]},{\"description\":\"Replace GameUI.showMessage's browser `alert()` with a non-blocking inline toast that auto-dismisses after 3 seconds, and remove references to nonexistent `ell-prompt-modal` and `ell-prompt-text` DOM elements from the GameUI constructor.\",\"expectedFiles\":[\"src/ui.js\"]},{\"description\":\"Guard CardRenderer.createCardElement against cards with undefined name, cost, effect, or flavorText so the card still renders with fallback labels instead of crashing.\",\"expectedFiles\":[\"src/ui/CardRenderer.js\"]},{\"description\":\"Add a `.toast-notification` CSS class in style.css so the new GameUI.showMessage toast renders as a dismissible overlay positioned top-center with z-index above game overlays.\",\"expectedFiles\":[\"style.css\"]}]}",
+      "ts": 1777256646095
+    },
+    {
+      "id": "2ee797d8-f02c-4765-b525-b4f99d9ff015",
+      "role": "system",
+      "text": "Contract (tier 1): \"Validate the agent health-check and respawn pipeline by applying a small, targeted set of UI resilience fixes that were unaddressed in the prior run.\" (4 criteria).",
+      "ts": 1777256646099
+    },
+    {
+      "id": "1e4e1873-b26a-465d-b5d1-dd94b8dafe28",
+      "role": "system",
+      "text": "Run failed: per-chunk timeout: no SSE chunks for 90000ms",
+      "ts": 1777256772123
+    }
+  ],
+  "transcriptTruncated": false
+}

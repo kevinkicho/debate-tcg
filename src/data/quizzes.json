@@ -39,6 +39,7 @@
       "type": "rapid_typing",
       "prompt": "Memorize and type this word perfectly to activate 'The Filibuster':",
       "targetWord": "Grandiloquent",
+      "correctAnswer": "Grandiloquent",
       "timeLimitSeconds": 5
     }
   ]

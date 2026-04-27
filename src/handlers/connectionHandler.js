@@ -1,4 +1,5 @@
 const roomManager = require('../state/RoomManager');
+const { executeAITurn } = require('./debateHandler');
 
 function registerConnectionHandlers(io, socket) {
 
@@ -15,8 +16,15 @@ function registerConnectionHandlers(io, socket) {
         socket.join(roomId);
         socket.roomId = roomId;
         roomManager.addPlayerToRoom(roomId, socket.id, { name: playerName, stateCode, isAI: false }, deckData);
-        // Use 'room_state' event which debateHandler and frontend expect
-        io.to(roomId).emit('room_state', roomManager.getRoom(roomId));
+        const updatedRoom = roomManager.getRoom(roomId);
+        if (updatedRoom && updatedRoom.status === 'active') {
+            roomManager.startGameLoop(roomId, io, executeAITurn);
+        }
+        const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+        sockets.forEach(socketId => {
+            const socketInstance = io.sockets.sockets.get(socketId);
+            if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+        });
     });
 
     // NEW: Single Player vs AI Setup
@@ -37,7 +45,74 @@ function registerConnectionHandlers(io, socket) {
         const aiId = 'AI_OPPONENT';
         roomManager.addPlayerToRoom(roomId, aiId, { name: 'ChatBot Senator', stateCode: stateCode || "54CA", isAI: true }, deckData ? [...deckData] : null);
 
-        io.to(roomId).emit('room_state', room);
+        const updatedRoom = roomManager.getRoom(roomId);
+        if (updatedRoom && updatedRoom.status === 'active') {
+            roomManager.startGameLoop(roomId, io, executeAITurn);
+        }
+
+        const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+        sockets.forEach(socketId => {
+            const socketInstance = io.sockets.sockets.get(socketId);
+            if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+        });
+    });
+
+    socket.on('claim_swing_state', (payload) => {
+        const { roomId, stateKey } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        roomManager.claimSwingState(roomId, stateKey, socket.id);
+        room.availableSwingState = null;
+
+        const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+        sockets.forEach(socketId => {
+            const socketInstance = io.sockets.sockets.get(socketId);
+            if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+        });
+    });
+
+    socket.on('flip_swing_state', (payload) => {
+        const { roomId, stateKey } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        roomManager.flipSwingState(roomId, stateKey, socket.id);
+
+        const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+        sockets.forEach(socketId => {
+            const socketInstance = io.sockets.sockets.get(socketId);
+            if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+        });
+    });
+
+    socket.on('defend_swing_state', (payload) => {
+        const { roomId, stateKey } = payload;
+        const room = roomManager.getRoom(roomId);
+        if (!room) return;
+
+        roomManager.defendSwingState(roomId, socket.id, stateKey);
+
+        const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+        sockets.forEach(socketId => {
+            const socketInstance = io.sockets.sockets.get(socketId);
+            if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+        });
+    });
+
+    socket.on('buy_lobbyist', (payload) => {
+        const { roomId, lobbyType } = payload;
+        const success = roomManager.buyLobbyist(roomId, socket.id, lobbyType);
+        if (success) {
+            const room = roomManager.getRoom(roomId);
+            const sockets = Array.from(io.sockets.adapter.rooms.get(roomId) || []);
+            sockets.forEach(socketId => {
+                const socketInstance = io.sockets.sockets.get(socketId);
+                if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(room, socketId));
+            });
+        } else {
+            socket.emit('room_error', { message: 'Insufficient capital or invalid lobbyist type.' });
+        }
     });
 
     socket.on('disconnect', () => {
@@ -46,7 +121,11 @@ function registerConnectionHandlers(io, socket) {
             io.to(socket.roomId).emit('player_left', { playerId: socket.id });
             const updatedRoom = roomManager.getRoom(socket.roomId);
             if (updatedRoom) {
-                io.to(socket.roomId).emit('room_state', updatedRoom);
+                const sockets = Array.from(io.sockets.adapter.rooms.get(socket.roomId) || []);
+                sockets.forEach(socketId => {
+                    const socketInstance = io.sockets.sockets.get(socketId);
+                    if (socketInstance) socketInstance.emit('room_state', roomManager.serializeRoomState(updatedRoom, socketId));
+                });
             }
         }
     });

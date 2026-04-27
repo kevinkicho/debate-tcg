@@ -7,12 +7,21 @@
     "translation": { "type": "string" },
     "type": { 
       "type": "string",
-      "enum": ["Character Trait", "Action", "Policy Action", "Hazard", "Trap Card", "Ultimate Buff", "Ultimate Attack", "Faction", "Defense", "Momentum Builder", "Backroom Deal", "Delay Tactic", "Board Control", "Board Wipe", "Information War", "Echo Chamber", "Resource Gen", "Infrastructure", "Public Image Event", "Event", "Empty Promise", "Sneak Attack", "Save/Counter", "Geographic Divider"]
+      "enum": ["Character Trait", "Action", "Policy Action", "Hazard", "Trap Card", "Ultimate Buff", "Ultimate Attack", "Faction", "Defense", "Momentum Builder", "Backroom Deal", "Delay Tactic", "Board Control", "Board Wipe", "Information War", "Echo Chamber", "Resource Gen", "Infrastructure", "Public Image Event", "Event", "Empty Promise", "Sneak Attack", "Save/Counter", "Geographic Divider", "Combo", "Endorsement", "Enhancement", "Gerrymander", "Whistleblower", "Pardon", "Voter Suppression"]
     },
     "cost": { "type": "integer", "minimum": 0 },
     "effect": { "type": "string" },
     "flavorText": { "type": "string" },
-    "learningGoal": { "type": "string" }
+    "learningGoal": { "type": "string" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tags for combo-synergy matching"
+    },
+    "argType": {
+      "type": "string",
+      "enum": ["Emotional", "Data-Driven", "Moral Authority"]
+    }
   },
   "required": ["name", "type", "cost", "effect"]
 }

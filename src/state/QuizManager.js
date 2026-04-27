@@ -9,7 +9,7 @@ class QuizManager {
     // Pull a random quiz based on whether it's an Attack, Defense, or Ultimate card
     generateQuizForCard(socketId, cardCategory) {
         let pool = [];
-        if (cardCategory === 'Defense' || cardCategory === 'Damage Control') {
+        if (cardCategory.includes('Defense') || cardCategory.includes('Damage Control') || cardCategory.includes('Save') || cardCategory.includes('Counter')) {
             pool = quizzes.defense_quizzes;
         } else if (cardCategory === 'Ultimate' || cardCategory === 'Board Reset') {
             pool = quizzes.ultimate_quizzes;
@@ -21,20 +21,41 @@ class QuizManager {
         const randomIndex = Math.floor(Math.random() * pool.length);
         const selectedQuiz = pool[randomIndex];
 
-        // Store the answer securely on the server, linked to the player's socket ID
+
+
+        // Store the answer securely on the server
         this.activeChallenges.set(socketId, {
             quizId: selectedQuiz.id,
-            correctAnswer: selectedQuiz.correctAnswer
+            correctAnswer: selectedQuiz.correctAnswer || selectedQuiz.targetWord
         });
 
-        // Strip the correct answer before sending the payload to the client!
-        const { correctAnswer, ...clientPayload } = selectedQuiz;
-        return clientPayload;
+        // Normalize payload for client
+        const options = [];
+        if (selectedQuiz.options) {
+            selectedQuiz.options.forEach((opt, index) => {
+                const label = opt.includes(')') ? opt.split(')')[0] : String.fromCharCode(65 + index);
+                options.push({ id: label, text: opt });
+            });
+        } else if (selectedQuiz.wordBank) {
+            selectedQuiz.wordBank.forEach(word => {
+                options.push({ id: word, text: word });
+            });
+        } else if (selectedQuiz.type === 'rapid_typing') {
+            options.push({ id: 'typing', text: 'Type the word...' });
+        }
+
+        return {
+            quizId: selectedQuiz.id,
+            question: selectedQuiz.prompt,
+            options: options,
+            type: selectedQuiz.type
+        };
     }
 
     // Validate the player's submission against the securely stored answer
-    validateAnswer(socketId, submittedAnswer) {
+    validateAnswer(socketId, quizId, submittedAnswer) {
         const challenge = this.activeChallenges.get(socketId);
+        if (challenge && challenge.quizId !== quizId) return false;
         if (!challenge) return false;
 
         let isCorrect = false;

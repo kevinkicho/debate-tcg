@@ -18,6 +18,15 @@ export class GameUI {
         if (this.displayRoom) this.displayRoom.innerText = roomId;
     }
 
+    showLobbyScreen() {
+        if (this.gameScreen) this.gameScreen.classList.add('hidden');
+        if (this.lobbyScreen) this.lobbyScreen.classList.remove('hidden');
+    }
+
+    showLobby() {
+        this.showLobbyScreen();
+    }
+
     updateGameState(roomState, socketId) {
         if (this.displaySupport) this.displaySupport.innerText = roomState.publicSupport;
 

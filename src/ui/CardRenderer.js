@@ -39,6 +39,16 @@ export class CardRenderer {
                 <span>${card.type}</span>
                 <span class="opacity-20 font-mono">#${(card.instanceId || '0000').slice(0, 4)}</span>
             </div>
+            ${card.argType ? `
+                <div class="flex justify-center mt-1">
+                    <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                        card.argType === 'Emotional' ? 'bg-red-100 text-red-700 border-red-300' : 
+                        card.argType === 'Data-Driven' ? 'bg-blue-100 text-blue-700 border-blue-300' : 
+                        'bg-amber-100 text-amber-700 border-amber-300'
+                    }">${card.argType}</span>
+                </div>
+            ` : ''}
+            ${card.tags && card.tags.length ? `<div class="flex flex-wrap gap-1 mt-2">${card.tags.map(t => `<span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-700">${t}</span>`).join('')}</div>` : ''}
             <div class="pt-4">
                 <div class="text-[10px] text-slate-500 italic font-medium leading-snug line-clamp-3">"${card.flavorText}"</div>
             </div>
@@ -57,6 +67,12 @@ export class CardRenderer {
             wrapper.style.animationDelay = `${index * 50}ms`;
 
             const el = this.createCardElement(card);
+            
+            if (GameState.lastPlayedCardTags && card.tags) {
+                const hasOverlap = card.tags.some(tag => GameState.lastPlayedCardTags.includes(tag));
+                if (hasOverlap) el.classList.add('combo-ready');
+            }
+
             wrapper.appendChild(el);
 
             wrapper.onclick = () => {
@@ -94,8 +110,16 @@ export class CardRenderer {
             // Class depends on stat: buff-capital, buff-support
             const statClass = (buff.stat || '').toLowerCase();
             icon.className = `buff-icon buff-${statClass} buff-${buff.type}`;
-            icon.innerText = (buff.stat || 'B')[0]; // First letter of stat
-            icon.title = `${buff.name}: +${buff.value} ${buff.stat} per tick (${Math.ceil(buff.duration)}s left)`;
+            const buffInitMap = { scandal: 'S', momentum: 'M', shield: 'D', rally: 'R', haste: 'H', slow: 'L' };
+            icon.innerText = buff.stat ? buff.stat[0] : (buffInitMap[buff.type] || 'B');
+            let desc = `+${buff.value || 0} ${buff.stat || 'points'} per tick`;
+            if (buff.type === 'scandal') desc = `-${buff.dotAmount || 0} support per tick`;
+            else if (buff.type === 'shield') desc = `absorbs ${buff.absorbAmount || 0} damage`;
+            else if (buff.type === 'momentum') desc = `boosts speed by ${buff.stackAmount || 0}`;
+            else if (buff.type === 'haste') desc = 'increased action speed';
+            else if (buff.type === 'slow') desc = 'reduced action speed';
+            else if (buff.type === 'rally') desc = 'massive rally in progress';
+            icon.title = `${buff.name}: ${desc} (${Math.ceil(buff.duration)}s left)`;
 
             const timer = document.createElement('div');
             timer.className = 'buff-timer';

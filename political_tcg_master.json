@@ -17,7 +17,8 @@
                     "cost": 0,
                     "effect": "Start with +3 Capital. Immune to privacy scandals.",
                     "flavorText": "Move fast, break things, and then hire a lobbyist to fix the regulations.",
-                    "learningGoal": "Tech Jargon: Using buzzwords as verbs (Disrupt, Pivot, Synergy)."
+                    "learningGoal": "Tech Jargon: Using buzzwords as verbs (Disrupt, Pivot, Synergy).",
+                    "argType": "Data-Driven"
                 },
                 {
                     "name": "The Hollywood Elite",
@@ -26,7 +27,8 @@
                     "cost": 0,
                     "effect": "+1 Support from Public Image Events.",
                     "flavorText": "I'm not just acting; I'm raising awareness. Have you seen my documentary?",
-                    "learningGoal": "Virtuous Phrasing: (Raising awareness, Speaking my truth, Using my platform)."
+                    "learningGoal": "Virtuous Phrasing: (Raising awareness, Speaking my truth, Using my platform).",
+                    "argType": "Moral Authority"
                 },
                 {
                     "name": "The Central Valley Farmer",
@@ -35,7 +37,8 @@
                     "cost": 0,
                     "effect": "Water-based attacks have no effect on you.",
                     "flavorText": "You folks up in the Bay wouldn't last a day without our almonds.",
-                    "learningGoal": "Rural Idioms: (Salt of the earth, Put food on the table, Work the land)."
+                    "learningGoal": "Rural Idioms: (Salt of the earth, Put food on the table, Work the land).",
+                    "argType": "Emotional"
                 },
                 {
                     "name": "The Gateway Cities Mayor",
@@ -44,7 +47,44 @@
                     "cost": 0,
                     "effect": "+1 Capital per turn from local retail taxes.",
                     "flavorText": "From Bellflower to Lakewood, we are the hardworking suburban backbone of this state!",
-                    "learningGoal": "Suburban Rhetoric: Identifying community foundations (Backbone, Hardworking, Gateway)."
+                    "learningGoal": "Suburban Rhetoric: Identifying community foundations (Backbone, Hardworking, Gateway).",
+                    "argType": "Data-Driven"
+                },
+                {
+                    "name": "Strategic Redistricting",
+                    "translation": "Redistribución Estratégica",
+                    "type": "Gerrymander",
+                    "cost": 3,
+                    "effect": "Reshuffle coalition weights among all active states.",
+                    "flavorText": "Why let the voters decide who the representative is? We'll decide who the voters are!",
+                    "argType": "Data-Driven"
+                },
+                {
+                    "name": "The Deep Throat Leak",
+                    "translation": "La Filtración",
+                    "type": "Whistleblower",
+                    "cost": 2,
+                    "effect": "Reveal 3 random cards from the opponent's hand.",
+                    "flavorText": "Meet me in the parking garage. I have the documents that will end your career.",
+                    "argType": "Moral Authority"
+                },
+                {
+                    "name": "The Executive Clemency",
+                    "translation": "Indulto Ejecutivo",
+                    "type": "Pardon",
+                    "cost": 4,
+                    "effect": "Clear all scandal damage-over-time effects from your campaign.",
+                    "flavorText": "I've decided that the legal proceedings were an unfair witch hunt. You're free to go.",
+                    "argType": "Emotional"
+                },
+                {
+                    "name": "ID Requirement Law",
+                    "translation": "Ley de Identificación",
+                    "type": "Voter Suppression",
+                    "cost": 3,
+                    "effect": "Reduce opponent's demographic approval by 15% across all regions.",
+                    "flavorText": "We're just ensuring election integrity. It's a shame if some people can't find their passports.",
+                    "argType": "Data-Driven"
                 },
                 {
                     "name": "The Westwood Academic",
@@ -53,10 +93,12 @@
                     "cost": 0,
                     "effect": "Defense cards cost 1 less.",
                     "flavorText": "According to my bioengineering research at UCLA, this policy is fundamentally flawed.",
-                    "learningGoal": "Academic Register: (Fundamentally flawed, Empirical evidence, Peer-reviewed)."
+                    "learningGoal": "Academic Register: (Fundamentally flawed, Empirical evidence, Peer-reviewed).",
+                    "argType": "Data-Driven"
                 },
                 {
                     "name": "The Coastal NIMBY",
+                    "argType": "Emotional",
                     "translation": "El Defensor del Barrio",
                     "type": "Character Trait",
                     "cost": 0,

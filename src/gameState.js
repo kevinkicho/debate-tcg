@@ -17,10 +17,15 @@ export const GameState = {
 
     // Data Cache
     cardCache: {},
+    masterData: null,
 
     // Logic Refs
+    myPlayerId: null,
     myCurrentAtb: 0,
     isRoomPaused: false,
+    myAtbFrozen: false,
+    lastPlayedCardTags: null,
+    lastState: null,
 
     // Methods
     reset() {
@@ -30,5 +35,13 @@ export const GameState = {
         this.isDrafting = false;
         this.selectedChoices = [];
         this.currentIntent = 'none';
+        this.myPlayerId = null;
+        this.myCurrentAtb = 0;
+        this.isRoomPaused = false;
+        this.myAtbFrozen = false;
+        this.lastPlayedCardTags = null;
+        this.lastState = null;
+        this.cardCache = {};
+        this.masterData = null;
     }
 };

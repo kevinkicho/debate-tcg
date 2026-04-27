@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USA Political TCG | Extreme Debate</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
     <link
@@ -26,7 +27,9 @@
             <input id="player-name" type="text" placeholder="Candidate Name"
                 class="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
             <input id="room-id" type="text" placeholder="Debate Room ID"
-                class="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                class="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            <select id="state-select" class="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                </select>
             <div class="grid grid-cols-2 gap-4">
                 <button id="join-btn"
                     class="bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-black uppercase tracking-wider transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/20">Join
@@ -45,6 +48,9 @@
         <div id="game-header"
             class="flex-shrink-0 h-[12vh] border-b border-white/10 flex justify-between items-center px-10 bg-slate-900/50 backdrop-blur-md z-[1100]">
 
+            <span id="hud-endorsements" class="hud-endorsement-counter">🗳️ 0</span>
+            <div id="campaign-phase" class="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-lg border border-amber-400/20 self-center absolute left-1/2 -translate-x-1/2 top-1">Primary</div>
+
             <!-- Player Status -->
             <div class="flex items-center gap-4">
                 <div class="bg-blue-900/40 p-3 rounded-2xl border border-blue-500/30">
@@ -52,9 +58,11 @@
                     <div class="flex items-baseline gap-1">
                         <span id="display-my-points" class="text-3xl font-black text-white">0</span>
                         <span class="text-[10px] opacity-30 text-white">/50</span>
+                        <span class="ml-2 text-[10px] font-bold text-red-400 uppercase tracking-tighter">⚖️ Scandal: <span id="display-scandal">0</span></span>
                     </div>
                 </div>
                 <div id="my-buff-hub" class="flex gap-1"></div>
+                <div id="hud-status-effects-me" class="flex flex-col gap-0.5 mt-1"></div>
             </div>
 
             <!-- Central Gauges -->
@@ -80,6 +88,7 @@
             <!-- Opponent Status -->
             <div class="flex items-center gap-4 text-right">
                 <div id="opp-buff-hub" class="flex gap-1"></div>
+                <div id="hud-status-effects-opp" class="flex flex-col gap-0.5 mt-1"></div>
                 <div class="bg-red-900/40 p-3 rounded-2xl border border-red-500/30">
                     <h2 class="text-[8px] font-black uppercase tracking-widest opacity-50 text-red-300">Opp. Support
                     </h2>
@@ -89,6 +98,13 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- News Cycle Ticker -->
+        <div id="hud-news-ticker" class="flex-shrink-0 h-[3vh] bg-slate-900/80 border-b border-white/5 flex items-center justify-center gap-3 px-10">
+            <span class="text-[9px] font-black uppercase tracking-widest text-amber-400/60">News Cycle</span>
+            <span id="news-cycle-name" class="text-[11px] font-black uppercase tracking-wider text-amber-300">—</span>
+            <span id="news-cycle-theme" class="text-[9px] font-bold uppercase tracking-widest text-white/30"></span>
         </div>
 
         <!-- 2. THE ARENA (Middle) - ~58vh -->
@@ -109,7 +125,7 @@
             <div id="right-sidebar"
                 class="w-64 flex-shrink-0 border-l border-white/5 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar bg-black/40">
                 <h3 class="text-[10px] font-black uppercase tracking-widest text-red-400">Campaign Odds</h3>
-                <div id="strategic-stats" class="flex flex-col gap-4">
+                <div id="hud-swing-states" class="bg-slate-900/50 p-3 rounded-xl border border-white/10 mb-3"><h3 class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-2">Swing States</h3><div id="swing-state-tallies"></div></div><div id="coalition-hud" class="bg-slate-900/50 p-3 rounded-xl border border-white/10 mb-3"><h3 class="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Coalition Support</h3></div><div id="strategic-stats" class="flex flex-col gap-4">
                     <div class="bg-white/5 p-3 rounded-xl border border-white/10">
                         <div class="flex justify-between text-[9px] font-bold text-white/40 mb-2">
                             <span>MOMENTUM</span>
@@ -126,6 +142,10 @@
                         </div>
                         <div id="odds-breakdown" class="flex flex-col gap-1 mt-2 text-[8px]"></div>
                     </div>
+                </div>
+                <div id="hud-win-conditions" class="flex flex-col gap-2">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Victory Paths</h4>
+                    <div id="win-conditions-list" class="flex flex-col gap-1"></div>
                 </div>
             </div>
 
@@ -149,6 +169,45 @@
                     <button class="bg-red-600 hover:bg-red-500 text-white px-10 py-4 rounded-2xl font-black"
                         onclick="submitVote('no')">Oppose</button>
                 </div>
+            </div>
+
+            <div id="crisis-overlay"
+                class="hidden absolute inset-0 z-[1350] bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center p-12 text-center">
+                <h2 class="text-red-500 text-xs font-black uppercase tracking-[0.5em] mb-4">⚠️ Global Crisis ⚠️</h2>
+                <h3 id="crisis-name" class="text-4xl font-black text-white mb-6">Crisis Scenario</h3>
+                <p id="crisis-description" class="text-xl text-slate-400 italic mb-10 max-w-xl"></p>
+                <div id="crisis-options" class="flex flex-wrap gap-6 justify-center"></div>
+            </div>
+
+            <div id="game-over-overlay" 
+                class="hidden absolute inset-0 z-[1400] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center">
+                <h2 class="text-blue-500 text-xs font-black uppercase tracking-[0.5em] mb-4">End of Campaign</h2>
+                <div id="game-over-condition" class="text-white/60 text-sm font-bold uppercase tracking-widest mb-2">Capped at 50 Support</div>
+                <h3 id="game-over-winner" class="text-6xl font-black text-white mb-8 italic">WINNER NAME</h3>
+                <div id="game-over-scores" class="text-white/40 text-xs uppercase font-bold mb-2 tracking-widest">Final Standings</div>
+                <div id="final-scores" class="flex gap-20 mb-12 text-2xl font-bold">
+                    <div class="flex flex-col">
+                        <span id="score-p1-name" class="text-sm uppercase text-white/40 mb-2">Candidate 1</span>
+                        <span id="score-p1-val" class="text-white">0</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="score-p2-name" class="text-sm uppercase text-white/40 mb-2">Candidate 2</span>
+                        <span id="score-p2-val" class="text-white">0</span>
+                    </div>
+                </div>
+                <div id="game-over-ev-breakdown" class="hidden mb-12 text-white/60 text-sm font-mono"></div>
+                <button id="play-again-btn" 
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest transition-all transform hover:scale-105 active:scale-95">
+                    Play Again
+                </button>
+            </div>
+        </div>
+
+        <!-- QUIZ OVERLAY -->
+        <div id="quiz-overlay" class="hidden fixed inset-0 z-[1400] flex items-center justify-center bg-slate-950/95 backdrop-blur-xl p-6 transition-opacity duration-300">
+            <div class="bg-slate-900 p-10 rounded-3xl border-2 border-amber-500/30 w-full max-w-lg shadow-2xl text-center">
+                <h2 id="quiz-prompt" class="text-3xl font-black uppercase tracking-tighter mb-8 text-amber-400">Knowledge Challenge</h2>
+                <div id="quiz-options" class="grid grid-cols-1 gap-4 mb-8"></div>
             </div>
         </div>
 
@@ -188,6 +247,38 @@
                             <span class="text-[8px] opacity-60 text-emerald-200">Gain Capital</span>
                         </span>
                     </button>
+                    <button id="dark-money-btn"
+                        class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95">
+                        <span class="flex flex-col items-center">
+                            <span class="text-sm">Dark Money</span>
+                            <span class="text-[8px] opacity-60 text-slate-400">Siphon $3M</span>
+                        </span>
+                    </button>
+                    <button id="filibuster-btn"
+                        class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95">
+                        <span class="flex flex-col items-center">
+                            <span class="text-sm">Filibuster</span>
+                            <span class="text-[8px] opacity-60 text-slate-400">Delay Vote</span>
+                        </span>
+                    </button>
+                    <button id="cloture-btn"
+                        class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-tighter disabled:opacity-30 transition-all active:scale-95">
+                        <span class="flex flex-col items-center">
+                            <span class="text-sm">Cloture Vote</span>
+                            <span class="text-[8px] opacity-60 text-slate-400">End Debate</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+                        <!-- Electoral College Progress -->
+            <div id="ec-progress-container" class="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 w-full max-w-xs">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-black uppercase tracking-widest text-white/50">Electoral College</span>
+                    <span id="ec-ev-count" class="text-xs font-mono text-purple-400">0 / 270 EV</span>
+                </div>
+                <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                    <div id="ec-progress-bar" class="h-full bg-gradient-to-r from-blue-600 to-purple-500 transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
@@ -204,6 +295,26 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (async () => {
+            try {
+                const res = await fetch('/political_tcg_master.json');
+                const data = await res.json();
+                const STATE_NAMES = {
+                    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming", "DC": "District of Columbia"
+                };
+                const states = Object.values(data.states).sort((a, b) => a.stateCode.localeCompare(b.stateCode));
+                const select = document.getElementById('state-select');
+                states.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.stateCode;
+                    opt.innerText = `${s.stateCode} - ${STATE_NAMES[s.stateCode] || s.stateCode}`;
+                    if(s.stateCode === 'CA') opt.selected = true;
+                    select.appendChild(opt);
+                });
+            } catch (e) { console.error("Failed to load state data", e); }
+        })();
+    </script>
     <script type="module" src="src/app.js"></script>
 </body>
 

@@ -17,6 +17,8 @@ class PoliticalTCG {
         this.phase = "START"; // START, DRAW, MAIN, END
         this.gameOver = false;
         this.winner = null;
+        this.swingStates = {};
+        this.filibusterTimer = { maxTurns: 30, turnCount: 0 };
     }
 
     initializePlayer(stateCode, displayName) {
@@ -27,11 +29,11 @@ class PoliticalTCG {
             name: displayName,
             state: stateCode,
             ev: stateInfo.electoralVotes,
-            support: 0,        // Game "HP"
-            capital: 5,        // "Mana"
+            support: 0,
+            capital: 5,
             deck: [...stateInfo.cards].sort(() => Math.random() - 0.5),
             hand: [],
-            activeFactions: [], // Permanent buffs
+            activeFactions: [],
             modifiers: {
                 costReduction: 0,
                 supportMultiplier: 1
@@ -39,7 +41,8 @@ class PoliticalTCG {
             status: {
                 isSkipped: false,
                 isProtected: false
-            }
+            },
+            deckOut: false
         };
     }
 
@@ -95,11 +98,16 @@ class PoliticalTCG {
     // --- Helper Logic ---
 
     drawCard(player, count) {
+        let drawn = 0;
         for (let i = 0; i < count; i++) {
             if (player.deck.length > 0) {
                 player.hand.push(player.deck.pop());
+                drawn++;
+            } else {
+                player.deckOut = true;
             }
         }
+        return drawn;
     }
 
     /**
@@ -130,13 +138,62 @@ class PoliticalTCG {
     }
 
     checkWinCondition() {
-        this.players.forEach(p => {
+        // 1. 50-Support victory (existing)
+        for (const p of this.players) {
             if (p.support >= 50) {
                 this.gameOver = true;
                 this.winner = p;
-                console.log(`\nWINNER: ${p.name} has secured the State of ${p.state}!`);
+                console.log(`\nWINNER: ${p.name} wins by SUPPORT (${p.support})!`);
+                return;
             }
-        });
+        }
+
+        // 2. Deck-out: opponent has no deck and no hand
+        for (const p of this.players) {
+            if (p.deckOut || (p.deck.length === 0 && p.hand.length === 0)) {
+                const opponent = this.players.find(o => o !== p);
+                this.gameOver = true;
+                this.winner = opponent;
+                console.log(`\nWINNER: ${opponent.name} wins by DECK-OUT (${p.name} exhausted)!`);
+                return;
+            }
+        }
+
+        // 3. Electoral-college majority
+        const p1EV = Object.values(this.swingStates).filter(v => v === this.players[0]).length;
+        const p2EV = Object.values(this.swingStates).filter(v => v === this.players[1]).length;
+        const totalEV = p1EV + p2EV;
+        if (totalEV > 0) {
+            const majority = Math.ceil(totalEV / 2);
+            if (p1EV >= majority && p1EV > p2EV) {
+                this.gameOver = true;
+                this.winner = this.players[0];
+                console.log(`\nWINNER: ${this.players[0].name} wins by ELECTORAL COLLEGE (${p1EV} EV)!`);
+                return;
+            }
+            if (p2EV >= majority && p2EV > p1EV) {
+                this.gameOver = true;
+                this.winner = this.players[1];
+                console.log(`\nWINNER: ${this.players[1].name} wins by ELECTORAL COLLEGE (${p2EV} EV)!`);
+                return;
+            }
+        }
+
+        // 4. Filibuster timeout
+        this.filibusterTimer.turnCount++;
+        if (this.filibusterTimer.turnCount >= this.filibusterTimer.maxTurns) {
+            const p1s = this.players[0].support;
+            const p2s = this.players[1].support;
+            this.gameOver = true;
+            if (p1s > p2s) {
+                this.winner = this.players[0];
+            } else if (p2s > p1s) {
+                this.winner = this.players[1];
+            } else {
+                this.winner = null;
+            }
+            console.log(`\nFILIBUSTER TIMEOUT after ${this.filibusterTimer.turnCount} turns! ${this.winner ? this.winner.name + ' wins!' : 'TIE!'}`);
+        }
     }
 }
 

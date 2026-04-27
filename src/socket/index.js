@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const registerConnectionHandlers = require('../handlers/connectionHandler');
-const registerDebateHandlers = require('../handlers/debateHandler');
+const { registerDebateHandlers } = require('../handlers/debateHandler');
 
 function setupSocketIO(httpServer) {
     const io = new Server(httpServer, {
